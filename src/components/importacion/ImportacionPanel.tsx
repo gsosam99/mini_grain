@@ -163,7 +163,7 @@ async function validarArchivo(file: File, db: DatosExistentes): Promise<FilaVali
     const advertencias: string[] = [];
     if (!row.Categoría?.trim()) advertencias.push('Categoría vacía');
     if (!row.Presentación || row.Presentación <= 0) advertencias.push('Presentación inválida');
-    if (!row.Precio || row.Precio <= 0) advertencias.push('Precio inválido');
+    if (row.Precio < 0) advertencias.push('Precio negativo');
 
     filas.push({
       indice: idx++, hoja: 'Productos',
@@ -288,7 +288,7 @@ async function validarArchivo(file: File, db: DatosExistentes): Promise<FilaVali
         estado: productosNoDisponibles.length > 0 ? 'advertencia' : 'nuevo',
         detalle:
           productosNoDisponibles.length > 0
-            ? `${count} productos — ${productosNoDisponibles.length} productos no encontrados en BD ni en hoja Productos (se crearán automáticamente)`
+            ? `${count} productos — ${productosNoDisponibles.length} no encontrados en catálogo: se omitirán del plan`
             : `${count} productos en el plan — se importarán`,
       });
     }
