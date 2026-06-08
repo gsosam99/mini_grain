@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guía de carga de datos — Mini Grain</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11.5px;
+      color: #1e293b;
+      background: #fff;
+      padding: 28px 32px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── Encabezado ── */
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 2.5px solid #166534;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    header h1 { font-size: 17px; font-weight: 700; color: #166534; line-height: 1.3; }
+    header p  { font-size: 10.5px; color: #64748b; margin-top: 2px; }
+    .badge {
+      font-size: 10px; font-weight: 600; color: #166534;
+      background: #dcfce7; border: 1px solid #bbf7d0;
+      border-radius: 99px; padding: 2px 10px; white-space: nowrap; margin-top: 2px;
+    }
+
+    /* ── Pasos principales ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .step {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 10px 8px;
+      position: relative;
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #166534;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .step h2 { font-size: 11px; font-weight: 700; color: #166534; margin-bottom: 4px; }
+    .step p  { font-size: 10px; color: #475569; line-height: 1.5; }
+    .step ul { padding-left: 12px; margin-top: 4px; }
+    .step ul li { font-size: 10px; color: #475569; line-height: 1.6; }
+    .step code {
+      font-family: 'Courier New', monospace;
+      font-size: 9.5px;
+      background: #f1f5f9;
+      border-radius: 3px;
+      padding: 0 3px;
+      color: #0f172a;
+    }
+    .arrow {
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: #94a3b8;
+      z-index: 1;
+    }
+
+    /* ── Sección Reglas clave + Errores comunes ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .box {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .box h3 {
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .box.green h3 { color: #166534; }
+    .box.red   h3 { color: #be123c; }
+    .box.amber h3 { color: #92400e; }
+
+    .rule {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 5px;
+      align-items: flex-start;
+    }
+    .rule-icon { font-size: 12px; flex-shrink: 0; margin-top: 0px; }
+    .rule-text { font-size: 10px; color: #334155; line-height: 1.5; }
+    .rule-text strong { color: #0f172a; }
+
+    /* ── Tabla ejemplo ── */
+    .example-section { margin-bottom: 14px; }
+    .example-section h3 {
+      font-size: 11px; font-weight: 700; color: #166534;
+      margin-bottom: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.5px;
+    }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 600;
+      text-align: left;
+      padding: 4px 7px;
+      border: 1px solid #e2e8f0;
+    }
+    td {
+      padding: 3.5px 7px;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f8fafc; }
+    td.mono { font-family: 'Courier New', monospace; font-size: 9px; }
+    td.note { font-style: italic; color: #94a3b8; }
+
+    /* ── Pie de página ── */
+    footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer p { font-size: 9.5px; color: #94a3b8; }
+
+    /* ── Colores de estado en la app ── */
+    .pill {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 99px;
+      font-size: 9.5px;
+      font-weight: 600;
+    }
+    .pill.green  { background: #dcfce7; color: #166534; }
+    .pill.blue   { background: #dbeafe; color: #1d4ed8; }
+    .pill.yellow { background: #fef9c3; color: #854d0e; }
+    .pill.red    { background: #fee2e2; color: #be123c; }
+
+    @media print {
+      body { padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Encabezado ── -->
+  <header>
+    <div>
+      <h1>Guía de carga de datos · Mini Grain</h1>
+      <p>Polar en el Campo — Ciclo 2026</p>
+    </div>
+    <span class="badge">Versión 1.0 · Junio 2026</span>
+  </header>
+
+  <!-- ── Los 5 pasos ── -->
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <h2>Técnicos</h2>
+      <p>Personal de campo que se asigna a los productores.</p>
+      <ul>
+        <li>Columnas: <code>Nombre</code>, <code>Rol</code>, <code>Contacto</code></li>
+        <li>Rol válido: <code>tecnico</code> / <code>coordinador</code> / <code>gerente</code></li>
+        <li>Un técnico puede aparecer solo una vez por rol.</li>
+      </ul>
+      <span class="arrow">›</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <h2>Productos</h2>
+      <p>Catálogo de insumos con todas sus presentaciones.</p>
+      <ul>
+        <li>Columnas: <code>Nombre</code>, <code>Categoría</code>, <code>Presentación</code>, <code>Unidad</code>, <code>Precio</code></li>
+        <li>Un mismo producto con 3 presentaciones → <strong>3 filas</strong>.</li>
+        <li>El precio es por unidad de presentación.</li>
+      </ul>
+      <span class="arrow">›</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <h2>Productores</h2>
+      <p>Datos del productor y su crédito aprobado.</p>
+      <ul>
+        <li>Columnas principales: <code>Nombre</code>, <code>Banco</code>, <code>Crédito&nbsp;Aprobado</code></li>
+        <li>Los tres campos de técnico deben coincidir exactamente con los nombres cargados en el paso 1.</li>
+      </ul>
+      <span class="arrow">›</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <h2>Lotes</h2>
+      <p>Los lotes de cada productor con sus hectáreas.</p>
+      <ul>
+        <li>Columnas: <code>Nombre&nbsp;Productor</code>, <code>Nombre&nbsp;Lote</code>, <code>Hectáreas</code></li>
+        <li><code>Nombre Productor</code> debe coincidir con el paso 3.</li>
+        <li>Un productor puede tener tantos lotes como necesite.</li>
+      </ul>
+      <span class="arrow">›</span>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <h2>Plan</h2>
+      <p>Qué producto se aplica, a quién y con qué dosis.</p>
+      <ul>
+        <li>Columnas: <code>Nombre&nbsp;Productor</code>, <code>Nombre&nbsp;Lote</code>, <code>Nombre&nbsp;Producto</code>, <code>Dosis/Ha</code></li>
+        <li><code>Nombre Lote</code> vacío = aplica a <strong>todos</strong> los lotes del productor.</li>
+        <li>La variante se elige en la app luego.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- ── Reglas + Errores ── -->
+  <div class="two-col">
+
+    <div class="box green">
+      <h3>✅ Reglas para evitar problemas</h3>
+      <div class="rule">
+        <span class="rule-icon">🔤</span>
+        <p class="rule-text"><strong>Nombres exactos entre hojas.</strong> El sistema ignora mayúsculas y tildes, pero los nombres tienen que ser reconocibles. "Nicole Ramones" y "N. Ramones" son distintas personas.</p>
+      </div>
+      <div class="rule">
+        <span class="rule-icon">📋</span>
+        <p class="rule-text"><strong>Completar en orden.</strong> Los pasos 3-4-5 dependen de los anteriores. Si un técnico no existe en la hoja 1, aparecerá como advertencia y el campo quedará vacío.</p>
+      </div>
+      <div class="rule">
+        <span class="rule-icon">📦</span>
+        <p class="rule-text"><strong>Productos: una fila por presentación.</strong> Si "Dual gold" viene en 1lt, 5lt y 20lt, son tres filas. La variante se asigna al plan desde la app.</p>
+      </div>
+      <div class="rule">
+        <span class="rule-icon">🔁</span>
+        <p class="rule-text"><strong>Podés reimportar sin duplicar.</strong> El sistema actualiza registros existentes si el nombre ya está en la base de datos. Subir el archivo dos veces no crea duplicados.</p>
+      </div>
+    </div>
+
+    <div class="box red">
+      <h3>❌ Errores comunes</h3>
+      <div class="rule">
+        <span class="rule-icon">⚠️</span>
+        <p class="rule-text"><strong>Typo en nombre de productor en la hoja Lotes.</strong> Si en Productores escribiste "Angela Guedez" y en Lotes pusiste "Angela Guedéz", el lote no se va a vincular. El preview te muestra el nombre más parecido como sugerencia.</p>
+      </div>
+      <div class="rule">
+        <span class="rule-icon">⚠️</span>
+        <p class="rule-text"><strong>Técnico con rol incorrecto.</strong> Si el técnico está cargado como <code>coordinador</code> pero en Productores lo referenciás en la columna "Nombre Técnico", el sistema no lo va a encontrar.</p>
+      </div>
+      <div class="rule">
+        <span class="rule-icon">⚠️</span>
+        <p class="rule-text"><strong>Producto en Plan que no está en hoja Productos.</strong> El sistema no crea productos automáticamente desde el Plan. Si un producto del plan no está en la hoja Productos ni en el catálogo, esa fila se omite con una advertencia.</p>
+      </div>
+      <div class="rule">
+        <span class="rule-icon">⚠️</span>
+        <p class="rule-text"><strong>Precio o presentación en 0.</strong> El sistema valida que precio y presentación sean mayores a 0. Filas con estos campos vacíos se marcan con advertencia y los cálculos de costo no funcionarán correctamente.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Tabla: qué significa cada color en el preview ── -->
+  <div class="example-section">
+    <h3>¿Qué significan los colores del preview antes de importar?</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Color</th>
+          <th>Significado</th>
+          <th>Acción recomendada</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pill green">✓ Actualizará</span></td>
+          <td>El registro ya existe en la base de datos. Se sobreescribirá con los datos del archivo.</td>
+          <td>Ninguna. Verificá que los datos nuevos sean correctos.</td>
+        </tr>
+        <tr>
+          <td><span class="pill blue">✓ Se creará</span></td>
+          <td>El registro no existe todavía. Se creará nuevo. También aplica cuando las referencias (técnico, productor) están en el mismo archivo.</td>
+          <td>Ninguna. Es el caso normal en la primera carga.</td>
+        </tr>
+        <tr>
+          <td><span class="pill yellow">⚠ Advertencia</span></td>
+          <td>La fila se importará, pero algo puede quedar incompleto (ej: técnico no encontrado, precio en 0).</td>
+          <td>Podés continuar y corregir luego en la app, o corregir el Excel y volver a subir.</td>
+        </tr>
+        <tr>
+          <td><span class="pill red">✗ Error</span></td>
+          <td>La fila <strong>no se importará</strong>. Generalmente porque referencia un productor que no existe ni en la BD ni en el mismo archivo.</td>
+          <td>Corregí el Excel y volvé a subirlo. El sistema te sugiere el nombre más parecido.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Ejemplo de estructura del archivo ── -->
+  <div class="example-section">
+    <h3>Ejemplo — Hoja Productos (una fila por variante)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Subcategoría</th>
+          <th>Presentación</th>
+          <th>Unidad</th>
+          <th>Precio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Agrinova</td><td>Dual gold</td><td>1. Insumos</td><td>Agroq. /Bio. /Mej.</td><td class="mono">1</td><td class="mono">lt</td><td class="mono">22.96</td>
+        </tr>
+        <tr>
+          <td>Agrinova</td><td>Dual gold</td><td>1. Insumos</td><td>Agroq. /Bio. /Mej.</td><td class="mono">5</td><td class="mono">lt</td><td class="mono">110.00</td>
+        </tr>
+        <tr>
+          <td>Agrinova</td><td>Dual gold</td><td>1. Insumos</td><td>Agroq. /Bio. /Mej.</td><td class="mono">20</td><td class="mono">lt</td><td class="mono">420.00</td>
+        </tr>
+        <tr>
+          <td>Fertiagro</td><td>Urea granulada</td><td>1. Insumos</td><td>Fertilizante Básico: Fórmula</td><td class="mono">50</td><td class="mono">kg</td><td class="mono">48.50</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="example-section">
+    <h3>Ejemplo — Hoja Plan</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre Productor</th>
+          <th>Nombre Lote</th>
+          <th>Nombre Producto</th>
+          <th>Dosis/Ha</th>
+          <th class="note">Nota</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Angela Rosa Guedez Morales</td>
+          <td class="note">(vacío)</td>
+          <td>Dual gold</td>
+          <td class="mono">1</td>
+          <td class="note">Aplica a todos los lotes del productor</td>
+        </tr>
+        <tr>
+          <td>Angela Rosa Guedez Morales</td>
+          <td class="note">(vacío)</td>
+          <td>Urea granulada</td>
+          <td class="mono">2.5</td>
+          <td class="note">Aplica a todos los lotes</td>
+        </tr>
+        <tr>
+          <td>Angela Rosa Guedez Morales</td>
+          <td>L01 LOTE 1A</td>
+          <td>Karate Zeon</td>
+          <td class="mono">0.5</td>
+          <td class="note">Solo se aplica en ese lote específico</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Pie ── -->
+  <footer>
+    <p>Mini Grain · Polar en el Campo · Ciclo 2026</p>
+    <p>Para dudas o correcciones del template, contactar al administrador del sistema.</p>
+  </footer>
+
+</body>
+</html>

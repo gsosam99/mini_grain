@@ -59,9 +59,24 @@ export async function exportarPlanExcel(params: {
 export async function descargarTemplateImportacion() {
   const { utils, writeFile } = await import('xlsx');
 
+  // Hoja 1: Técnicos
   const wbTecnicos = [
     { Nombre: 'Nicole Ramones', Rol: 'tecnico', Contacto: '0424-5126975' },
+    { Nombre: 'Franklin Luis', Rol: 'coordinador', Contacto: '0412-3456789' },
+    { Nombre: 'Hilda Alejua', Rol: 'gerente', Contacto: '0416-9876543' },
   ];
+
+  // Hoja 2: Productos — una fila por variante (presentación)
+  // El mismo producto puede aparecer varias veces con distintas presentaciones
+  const wbProductos = [
+    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 1, Unidad: 'lt', Precio: 22.96 },
+    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 5, Unidad: 'lt', Precio: 110.00 },
+    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 20, Unidad: 'lt', Precio: 420.00 },
+    { Proveedor: 'Syngenta', Nombre: 'Karate Zeon', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 1, Unidad: 'lt', Precio: 35.00 },
+    { Proveedor: 'Fertiagro', Nombre: 'Urea granulada', Categoría: '1. Insumos', Subcategoría: 'Fertilizante Básico: Fórmula', Presentación: 50, Unidad: 'kg', Precio: 48.50 },
+  ];
+
+  // Hoja 3: Productores
   const wbProductores = [
     {
       Nombre: 'Angela Rosa Guedez Morales',
@@ -74,26 +89,25 @@ export async function descargarTemplateImportacion() {
       'Nombre Gerente': 'Hilda Alejua',
     },
   ];
+
+  // Hoja 4: Lotes
   const wbLotes = [
     { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'L01 LOTE 1A', Hectáreas: 26.53, Estado: 'Portuguesa' },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'L02 LOTE 2B', Hectáreas: 14.00, Estado: 'Portuguesa' },
   ];
+
+  // Hoja 5: Plan — una fila por producto por productor
+  // Nombre Lote vacío = aplica a todos los lotes del productor
   const wbPlan = [
-    {
-      'Nombre Productor': 'Angela Rosa Guedez Morales',
-      'Nombre Lote': '',
-      Proveedor: 'Agrinova',
-      Producto: 'Dual gold',
-      Categoría: '1. Insumos',
-      Subcategoría: 'Agroq. /Bio. /Mej.',
-      Presentación: 1,
-      Unidad: 'lt',
-      Precio: 22.96,
-      'Dosis/Ha': 1,
-    },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': '', 'Nombre Producto': 'Dual gold', 'Dosis/Ha': 1 },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': '', 'Nombre Producto': 'Urea granulada', 'Dosis/Ha': 2.5 },
+    // Ejemplo con lote específico (cal u otro producto focalizado):
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'L01 LOTE 1A', 'Nombre Producto': 'Karate Zeon', 'Dosis/Ha': 0.5 },
   ];
 
   const wb = utils.book_new();
   utils.book_append_sheet(wb, utils.json_to_sheet(wbTecnicos), 'Técnicos');
+  utils.book_append_sheet(wb, utils.json_to_sheet(wbProductos), 'Productos');
   utils.book_append_sheet(wb, utils.json_to_sheet(wbProductores), 'Productores');
   utils.book_append_sheet(wb, utils.json_to_sheet(wbLotes), 'Lotes');
   utils.book_append_sheet(wb, utils.json_to_sheet(wbPlan), 'Plan');
