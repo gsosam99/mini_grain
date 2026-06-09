@@ -1,6 +1,11 @@
+'use client';
+
+import { useMemo } from 'react';
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
+import SortableHeader from '@/components/ui/SortableHeader';
+import { useSortable, applySortable } from '@/hooks/useSortable';
 import { calcularRedondeo, calcularResumenCredito } from '@/lib/rounding';
 
 interface Props {
@@ -16,6 +21,7 @@ interface Props {
     id: string;
     dosis_ha: number;
     lotes_ids: string[] | null;
+    plan: { productor_id: string } | null;
     variante: { id: string; presentacion: number; precio: number } | null;
   }[];
 }
@@ -27,7 +33,7 @@ function calcularCostoProductor(
 ): number {
   const productorLotes = lotes.filter((l) => l.productor_id === productorId);
   return planProductos.reduce((sum, pp) => {
-    if (!pp.variante) return sum;
+    if (!pp.variante || pp.plan?.productor_id !== productorId) return sum;
     const lotesAplicables = pp.lotes_ids
       ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
       : productorLotes;
@@ -43,15 +49,26 @@ function calcularCostoProductor(
   }, 0);
 }
 
+type SortKey = 'nombre' | 'estado' | 'banco' | 'credito' | 'costo' | 'delta';
+
 export default function CreditoTable({ productores, lotes, planProductos }: Props) {
-  const rows = productores.map((p) => {
-    const costo = calcularCostoProductor(p.id, lotes, planProductos);
-    const resumen = calcularResumenCredito({
-      creditoAprobado: p.credito_aprobado,
-      costoTotalPlan: costo,
+  const { sort, toggle } = useSortable<SortKey>('nombre');
+
+  const rows = useMemo(() => {
+    const base = productores.map((p) => {
+      const costo = calcularCostoProductor(p.id, lotes, planProductos);
+      const resumen = calcularResumenCredito({ creditoAprobado: p.credito_aprobado, costoTotalPlan: costo });
+      return { ...p, costo, resumen };
     });
-    return { ...p, costo, resumen };
-  });
+    return applySortable(base, sort, (row, key) => ({
+      nombre: row.nombre,
+      estado: row.estado ?? '',
+      banco: row.banco ?? '',
+      credito: row.credito_aprobado,
+      costo: row.costo,
+      delta: row.resumen.delta,
+    }[key]));
+  }, [productores, lotes, planProductos, sort]);
 
   return (
     <Card>
@@ -59,13 +76,13 @@ export default function CreditoTable({ productores, lotes, planProductos }: Prop
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Productor</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Banco</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Crédito aprobado</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Costo plan</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Delta</th>
-              <th className="text-center px-4 py-3 font-medium text-slate-600">Estado crédito</th>
+              <SortableHeader label="Productor" sortKey="nombre" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+              <SortableHeader label="Estado" sortKey="estado" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+              <SortableHeader label="Banco" sortKey="banco" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+              <SortableHeader label="Crédito aprobado" sortKey="credito" currentKey={sort.key} dir={sort.dir} onSort={toggle} align="right" />
+              <SortableHeader label="Costo plan" sortKey="costo" currentKey={sort.key} dir={sort.dir} onSort={toggle} align="right" />
+              <SortableHeader label="Delta" sortKey="delta" currentKey={sort.key} dir={sort.dir} onSort={toggle} align="right" />
+              <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wide text-slate-500">Estado crédito</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

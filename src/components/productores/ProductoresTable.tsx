@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
+import SortableHeader from '@/components/ui/SortableHeader';
+import { useSortable, applySortable } from '@/hooks/useSortable';
 import { Search, ChevronRight } from 'lucide-react';
 
 interface Productor {
@@ -22,10 +24,13 @@ interface Props {
   lotes: { id: string; productor_id: string; hectareas: number }[];
 }
 
+type SortKey = 'nombre' | 'estado' | 'banco' | 'ha' | 'credito' | 'tecnico';
+
 export default function ProductoresTable({ productores, lotes }: Props) {
   const [search, setSearch] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
   const [filterBanco, setFilterBanco] = useState('');
+  const { sort, toggle } = useSortable<SortKey>('nombre');
 
   const estados = useMemo(
     () => [...new Set(productores.map((p) => p.estado).filter(Boolean))],
@@ -36,8 +41,11 @@ export default function ProductoresTable({ productores, lotes }: Props) {
     [productores]
   );
 
+  const getHa = (id: string) =>
+    lotes.filter((l) => l.productor_id === id).reduce((s, l) => s + l.hectareas, 0);
+
   const filtrados = useMemo(() => {
-    return productores.filter((p) => {
+    const filtered = productores.filter((p) => {
       const q = search.toLowerCase();
       const matchSearch =
         !q ||
@@ -48,10 +56,15 @@ export default function ProductoresTable({ productores, lotes }: Props) {
       const matchBanco = !filterBanco || p.banco === filterBanco;
       return matchSearch && matchEstado && matchBanco;
     });
-  }, [productores, search, filterEstado, filterBanco]);
-
-  const getHa = (id: string) =>
-    lotes.filter((l) => l.productor_id === id).reduce((s, l) => s + l.hectareas, 0);
+    return applySortable(filtered, sort, (p, key) => ({
+      nombre: p.nombre,
+      estado: p.estado ?? '',
+      banco: p.banco ?? '',
+      ha: getHa(p.id),
+      credito: p.credito_aprobado,
+      tecnico: p.tecnico?.nombre ?? '',
+    }[key]));
+  }, [productores, lotes, search, filterEstado, filterBanco, sort]);
 
   return (
     <div className="space-y-4">
@@ -99,12 +112,12 @@ export default function ProductoresTable({ productores, lotes }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Productor</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Estado / Localidad</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Banco</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-600">Ha</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-600">Crédito aprobado</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Técnico</th>
+                <SortableHeader label="Productor" sortKey="nombre" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+                <SortableHeader label="Estado / Localidad" sortKey="estado" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+                <SortableHeader label="Banco" sortKey="banco" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+                <SortableHeader label="Ha" sortKey="ha" currentKey={sort.key} dir={sort.dir} onSort={toggle} align="right" />
+                <SortableHeader label="Crédito aprobado" sortKey="credito" currentKey={sort.key} dir={sort.dir} onSort={toggle} align="right" />
+                <SortableHeader label="Técnico" sortKey="tecnico" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
                 <th className="px-4 py-3" />
               </tr>
             </thead>

@@ -26,7 +26,8 @@ create table if not exists variantes_producto (
   unidad text not null,
   presentacion numeric not null,
   precio numeric not null default 0,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  unique (producto_id, presentacion, unidad)
 );
 
 create table if not exists tecnicos (
@@ -34,7 +35,8 @@ create table if not exists tecnicos (
   nombre text not null,
   rol text not null check (rol in ('tecnico', 'coordinador', 'gerente')),
   contacto text,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  unique (nombre, rol)
 );
 
 -- ============================================================
@@ -51,7 +53,8 @@ create table if not exists productores (
   tecnico_id uuid references tecnicos(id) on delete set null,
   coordinador_id uuid references tecnicos(id) on delete set null,
   gerente_id uuid references tecnicos(id) on delete set null,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  unique (nombre)
 );
 
 create table if not exists lotes (
@@ -60,7 +63,8 @@ create table if not exists lotes (
   nombre text not null,
   hectareas numeric not null,
   estado text,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  unique (productor_id, nombre)
 );
 
 -- ============================================================
@@ -110,6 +114,15 @@ create table if not exists plan_productos (
   created_at timestamptz default now()
 );
 
+-- Agrupa múltiples plan_cambios en una operación masiva (2026-06-09)
+create table if not exists cambios_batch (
+  id          uuid primary key default gen_random_uuid(),
+  descripcion text not null,
+  tipo        text not null check (tipo in ('sustitucion_producto', 'cambio_variante', 'cambio_precio', 'cambio_dosis')),
+  afectados   int not null default 0,
+  fecha       timestamptz default now()
+);
+
 -- Registro de cambios logísticos sobre un ítem del plan
 create table if not exists plan_cambios (
   id uuid primary key default gen_random_uuid(),
@@ -119,8 +132,11 @@ create table if not exists plan_cambios (
   variante_nueva_id uuid references variantes_producto(id),
   dosis_original numeric,
   dosis_nueva numeric,
+  precio_original numeric,   -- para cambio_precio
+  precio_nuevo    numeric,   -- para cambio_precio
   motivo text,
-  fecha timestamptz default now()
+  fecha timestamptz default now(),
+  batch_id uuid references cambios_batch(id) on delete set null
 );
 
 -- ============================================================
@@ -152,6 +168,7 @@ alter table analisis_suelos enable row level security;
 alter table planes enable row level security;
 alter table plan_productos enable row level security;
 alter table plan_cambios enable row level security;
+alter table cambios_batch enable row level security;
 alter table historial_cal enable row level security;
 
 -- Políticas: solo usuarios autenticados pueden leer y escribir
@@ -162,7 +179,7 @@ begin
   foreach t in array array[
     'proveedores','productos','variantes_producto','tecnicos',
     'productores','lotes','analisis_suelos','planes',
-    'plan_productos','plan_cambios','historial_cal'
+    'plan_productos','plan_cambios','cambios_batch','historial_cal'
   ] loop
     execute format('
       create policy "auth_all_%s" on %I
@@ -179,6 +196,7 @@ end $$;
 create index if not exists idx_lotes_productor on lotes(productor_id);
 create index if not exists idx_plan_productos_plan on plan_productos(plan_id);
 create index if not exists idx_plan_cambios_plan_producto on plan_cambios(plan_producto_id);
+create index if not exists idx_plan_cambios_batch on plan_cambios(batch_id);
 create index if not exists idx_analisis_lote on analisis_suelos(lote_id);
 create index if not exists idx_historial_cal_productor on historial_cal(productor_id);
 create index if not exists idx_variantes_producto on variantes_producto(producto_id);

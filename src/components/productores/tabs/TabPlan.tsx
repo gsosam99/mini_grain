@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { Fragment, useState, useMemo, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
-import Alert from '@/components/ui/Alert';
-import { Plus, Pencil, History } from 'lucide-react';
+import { Plus, Pencil, History, ChevronDown, ChevronRight } from 'lucide-react';
+import SortableHeader from '@/components/ui/SortableHeader';
+import { useSortable, applySortable } from '@/hooks/useSortable';
 import { calcularRedondeo } from '@/lib/rounding';
 import EditarPlanProductoModal from '@/components/planes/EditarPlanProductoModal';
 import AgregarProductoPlanModal from '@/components/planes/AgregarProductoPlanModal';
@@ -16,7 +16,11 @@ interface VarianteConProducto {
   unidad: string;
   presentacion: number;
   precio: number;
-  producto: { id: string; nombre: string; categoria: string; subcategoria: string | null;
+  producto: {
+    id: string;
+    nombre: string;
+    categoria: string;
+    subcategoria: string | null;
     proveedor: { id: string; nombre: string } | null;
   } | null;
 }
@@ -51,11 +55,21 @@ interface Props {
   productorId: string;
 }
 
+// ─── helpers ────────────────────────────────────────────────────────────────
+
 function getHectareasAplicables(pp: PlanProducto, lotes: Lote[]): number {
   const aplicables = pp.lotes_ids
     ? lotes.filter((l) => pp.lotes_ids!.includes(l.id))
     : lotes;
   return aplicables.reduce((s, l) => s + l.hectareas, 0);
+}
+
+function getLoteLabel(pp: PlanProducto, lotes: Lote[]): string {
+  if (pp.lotes_ids === null) return 'Todos los lotes';
+  const nombres = pp.lotes_ids.map((id) => lotes.find((l) => l.id === id)?.nombre ?? '—');
+  if (nombres.length === 0) return 'Sin lotes';
+  if (nombres.length <= 2) return nombres.join(', ');
+  return `${nombres[0]}, ${nombres[1]} +${nombres.length - 2} más`;
 }
 
 function agruparPorCategoria(items: PlanProducto[]) {
@@ -68,11 +82,135 @@ function agruparPorCategoria(items: PlanProducto[]) {
   return grupos;
 }
 
+// ─── types ───────────────────────────────────────────────────────────────────
+
+type PlanSortKey = 'producto' | 'proveedor' | 'subcategoria' | 'ha' | 'cantidad' | 'costo';
+
+interface AplicacionDetalle {
+  pp: PlanProducto;
+  loteLabel: string;
+  ha: number;
+  dosis: number;
+  varianteLabel: string;
+  precioUnitario: number;
+  unidades: number;
+  /** Cantidad física = unidades × presentacion (en la unidad base del producto) */
+  cantidadFisica: number;
+  unidad: string;
+  costo: number;
+  tieneCambios: boolean;
+}
+
+interface AggRow {
+  productId: string;
+  nombre: string;
+  subcategoria: string | null;
+  proveedor: string | null;
+  totalHa: number;
+  totalUnidades: number;
+  /** Suma de cantidadFisica de todas las aplicaciones */
+  totalCantidadFisica: number;
+  /** Unidad de medida si todas las aplicaciones usan la misma; null si hay mezcla */
+  unidadComun: string | null;
+  totalCosto: number;
+  aplicaciones: AplicacionDetalle[];
+}
+
+// ─── aggregate builder ───────────────────────────────────────────────────────
+
+function buildAggRows(items: PlanProducto[], lotes: Lote[]): AggRow[] {
+  // Group plan_productos by product ID
+  const map = new Map<string, PlanProducto[]>();
+  for (const pp of items) {
+    const key = pp.variante?.producto?.id ?? pp.id;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(pp);
+  }
+
+  const rows: AggRow[] = [];
+  for (const [productId, pps] of map) {
+    const first = pps.find((p) => p.variante?.producto) ?? pps[0];
+    const nombre = first.variante?.producto?.nombre ?? '—';
+    const subcategoria = first.variante?.producto?.subcategoria ?? null;
+    const proveedor = first.variante?.producto?.proveedor?.nombre ?? null;
+
+    let totalHa = 0;
+    let totalUnidades = 0;
+    let totalCantidadFisica = 0;
+    let totalCosto = 0;
+    const unidadesVistas = new Set<string>();
+    const aplicaciones: AplicacionDetalle[] = [];
+
+    for (const pp of pps) {
+      if (!pp.variante) continue;
+      const ha = getHectareasAplicables(pp, lotes);
+      const { unidadesNecesarias, costoTotal } = calcularRedondeo({
+        dosisHa: pp.dosis_ha,
+        hectareas: ha,
+        presentacion: pp.variante.presentacion,
+        precio: pp.variante.precio,
+      });
+      const cantidadFisica = unidadesNecesarias * pp.variante.presentacion;
+      totalHa += ha;
+      totalUnidades += unidadesNecesarias;
+      totalCantidadFisica += cantidadFisica;
+      totalCosto += costoTotal;
+      unidadesVistas.add(pp.variante.unidad);
+      aplicaciones.push({
+        pp,
+        loteLabel: getLoteLabel(pp, lotes),
+        ha,
+        dosis: pp.dosis_ha,
+        varianteLabel: `${pp.variante.presentacion} ${pp.variante.unidad}`,
+        precioUnitario: pp.variante.precio,
+        unidades: unidadesNecesarias,
+        cantidadFisica,
+        unidad: pp.variante.unidad,
+        costo: costoTotal,
+        tieneCambios: pp.plan_cambios.length > 0,
+      });
+    }
+
+    const unidadComun = unidadesVistas.size === 1 ? [...unidadesVistas][0] : null;
+
+    rows.push({
+      productId, nombre, subcategoria, proveedor,
+      totalHa, totalUnidades, totalCantidadFisica, unidadComun, totalCosto,
+      aplicaciones,
+    });
+  }
+  return rows;
+}
+
+// ─── component ───────────────────────────────────────────────────────────────
+
 export default function TabPlan({ plan, lotes, productorId }: Props) {
   const [editando, setEditando] = useState<PlanProducto | null>(null);
   const [agregando, setAgregando] = useState(false);
   const [creandoPlan, setCreandoPlan] = useState(false);
   const [planLocal, setPlanLocal] = useState(plan);
+  // Categorías cerradas (vacío = todas abiertas)
+  const [cerradas, setCerradas] = useState<Set<string>>(new Set());
+  // Productos expandidos para ver desglose por lote
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  // Sorting compartido entre todas las categorías
+  const { sort: planSort, toggle: planToggle } = useSortable<PlanSortKey>('producto');
+
+  const toggleCategoria = useCallback((cat: string) => {
+    setCerradas((prev) => {
+      const next = new Set(prev);
+      next.has(cat) ? next.delete(cat) : next.add(cat);
+      return next;
+    });
+  }, []);
+
+  const toggleProduct = useCallback((productId: string) => {
+    setExpandedProducts((prev) => {
+      const next = new Set(prev);
+      next.has(productId) ? next.delete(productId) : next.add(productId);
+      return next;
+    });
+  }, []);
 
   const handlePlanActualizado = useCallback((nuevoPlan: typeof plan) => {
     setPlanLocal(nuevoPlan);
@@ -80,7 +218,7 @@ export default function TabPlan({ plan, lotes, productorId }: Props) {
 
   const grupos = useMemo(
     () => agruparPorCategoria(planLocal?.plan_productos ?? []),
-    [planLocal]
+    [planLocal],
   );
 
   const totalCosto = useMemo(() => {
@@ -100,7 +238,9 @@ export default function TabPlan({ plan, lotes, productorId }: Props) {
   if (!planLocal) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-500 mb-4">Este productor no tiene un plan agrícola creado para el ciclo 2026.</p>
+        <p className="text-slate-500 mb-4">
+          Este productor no tiene un plan agrícola creado para el ciclo 2026.
+        </p>
         <Button onClick={() => setCreandoPlan(true)}>
           <Plus size={16} />
           Crear plan 2026
@@ -119,21 +259,21 @@ export default function TabPlan({ plan, lotes, productorId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-slate-500">
-            Plan ciclo {planLocal.ciclo} ·{' '}
-            <span className="font-semibold text-slate-900">
-              Costo total: ${totalCosto.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-            </span>
-          </p>
-        </div>
+        <p className="text-sm text-slate-500">
+          Plan ciclo {planLocal.ciclo} ·{' '}
+          <span className="font-semibold text-slate-900">
+            Costo total: ${totalCosto.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+          </span>
+        </p>
         <Button size="sm" onClick={() => setAgregando(true)}>
           <Plus size={14} />
           Agregar producto
         </Button>
       </div>
 
+      {/* Category accordions */}
       {Object.entries(grupos).map(([categoria, items]) => {
         const subtotal = items.reduce((sum, pp) => {
           if (!pp.variante) return sum;
@@ -147,111 +287,284 @@ export default function TabPlan({ plan, lotes, productorId }: Props) {
           return sum + costoTotal;
         }, 0);
 
+        const isCerrada = cerradas.has(categoria);
+
+        // Build aggregate rows (1 per unique product) and sort them
+        const aggRows = buildAggRows(items, lotes);
+        const aggRowsSorted = applySortable(aggRows, planSort, (row, key) => (
+          ({
+            producto: row.nombre,
+            proveedor: row.proveedor ?? '',
+            subcategoria: row.subcategoria ?? '',
+            ha: row.totalHa,
+            cantidad: row.totalCantidadFisica,
+            costo: row.totalCosto,
+          } as Record<string, string | number>)[key]
+        ));
+
         return (
           <Card key={categoria}>
-            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700">{categoria}</h3>
+            {/* Category header — clickable to collapse */}
+            <button
+              onClick={() => toggleCategoria(categoria)}
+              className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors rounded-t-xl"
+            >
+              <div className="flex items-center gap-2">
+                <ChevronDown
+                  size={15}
+                  className={[
+                    'text-slate-400 transition-transform duration-200',
+                    isCerrada ? '-rotate-90' : '',
+                  ].join(' ')}
+                />
+                <h3 className="text-sm font-semibold text-slate-700">{categoria}</h3>
+                <span className="text-xs text-slate-400">
+                  {aggRows.length} {aggRows.length === 1 ? 'producto' : 'productos'}
+                </span>
+              </div>
               <span className="text-sm font-mono text-slate-700">
                 ${subtotal.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
               </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-slate-100 text-slate-500">
-                    <th className="text-left px-4 py-2 font-medium">Producto</th>
-                    <th className="text-left px-4 py-2 font-medium">Proveedor</th>
-                    <th className="text-left px-4 py-2 font-medium">Subcategoría</th>
-                    <th className="text-right px-4 py-2 font-medium">Dosis/Ha</th>
-                    <th className="text-right px-4 py-2 font-medium">Ha aplicables</th>
-                    <th className="text-right px-4 py-2 font-medium">Total s/redondear</th>
-                    <th className="text-left px-4 py-2 font-medium">Presentación</th>
-                    <th className="text-right px-4 py-2 font-medium">Redondeo</th>
-                    <th className="text-right px-4 py-2 font-medium">Precio u.</th>
-                    <th className="text-right px-4 py-2 font-medium">Costo total</th>
-                    <th className="px-4 py-2" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {items.map((pp) => {
-                    if (!pp.variante || !pp.variante.producto) return null;
-                    const ha = getHectareasAplicables(pp, lotes);
-                    const { totalSinRedondear, unidadesNecesarias, costoTotal } = calcularRedondeo({
-                      dosisHa: pp.dosis_ha,
-                      hectareas: ha,
-                      presentacion: pp.variante.presentacion,
-                      precio: pp.variante.precio,
-                    });
-                    const tieneCambios = pp.plan_cambios.length > 0;
-                    const soloAlgunosLotes = pp.lotes_ids !== null;
+            </button>
 
-                    return (
-                      <tr key={pp.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-slate-900">
-                              {pp.variante.producto.nombre}
-                            </span>
-                            {tieneCambios && (
-                              <History size={12} className="text-amber-500 shrink-0" />
-                            )}
-                            {soloAlgunosLotes && (
-                              <Badge variant="blue" className="text-xs">
-                                {pp.lotes_ids!.length} lotes
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-slate-500">
-                          {pp.variante.producto.proveedor?.nombre ?? '—'}
-                        </td>
-                        <td className="px-4 py-2 text-slate-500">
-                          {pp.variante.producto.subcategoria ?? '—'}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono text-slate-900">
-                          {pp.dosis_ha.toLocaleString('es-VE', { maximumFractionDigits: 3 })}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono text-slate-700">
-                          {ha.toLocaleString('es-VE', { maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono text-slate-700">
-                          {totalSinRedondear.toLocaleString('es-VE', { maximumFractionDigits: 3 })}
-                        </td>
-                        <td className="px-4 py-2 text-slate-600">
-                          {pp.variante.presentacion} {pp.variante.unidad}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono font-semibold text-slate-900">
-                          {unidadesNecesarias}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono text-slate-700">
-                          ${pp.variante.precio.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono font-semibold text-green-700">
-                          ${costoTotal.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-4 py-2">
-                          <button
-                            onClick={() => setEditando(pp)}
-                            className="text-slate-400 hover:text-green-700 transition-colors"
-                            title="Editar"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                        </td>
+            {/* Accordion body — grid trick for smooth animation */}
+            <div
+              className="grid transition-[grid-template-rows] duration-200 ease-out"
+              style={{ gridTemplateRows: isCerrada ? '0fr' : '1fr' }}
+            >
+              <div className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        {/* expand-toggle column */}
+                        <th className="w-8 px-2 py-2" />
+                        <SortableHeader
+                          label="Producto"
+                          sortKey="producto"
+                          currentKey={planSort.key}
+                          dir={planSort.dir}
+                          onSort={planToggle}
+                          className="text-xs"
+                        />
+                        <SortableHeader
+                          label="Subcategoría"
+                          sortKey="subcategoria"
+                          currentKey={planSort.key}
+                          dir={planSort.dir}
+                          onSort={planToggle}
+                          className="text-xs"
+                        />
+                        <SortableHeader
+                          label="Proveedor"
+                          sortKey="proveedor"
+                          currentKey={planSort.key}
+                          dir={planSort.dir}
+                          onSort={planToggle}
+                          className="text-xs"
+                        />
+                        <SortableHeader
+                          label="Ha totales"
+                          sortKey="ha"
+                          currentKey={planSort.key}
+                          dir={planSort.dir}
+                          onSort={planToggle}
+                          align="right"
+                          className="text-xs"
+                        />
+                        <SortableHeader
+                          label="Cantidad"
+                          sortKey="cantidad"
+                          currentKey={planSort.key}
+                          dir={planSort.dir}
+                          onSort={planToggle}
+                          align="right"
+                          className="text-xs"
+                        />
+                        <SortableHeader
+                          label="Costo total"
+                          sortKey="costo"
+                          currentKey={planSort.key}
+                          dir={planSort.dir}
+                          onSort={planToggle}
+                          align="right"
+                          className="text-xs"
+                        />
+                        <th className="w-8 px-4 py-2" />
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {aggRowsSorted.map((row) => {
+                        const isExpanded = expandedProducts.has(row.productId);
+                        const hasMultiple = row.aplicaciones.length > 1;
+
+                        return (
+                          <Fragment key={row.productId}>
+                            {/* ── Aggregate row (1 per product) ── */}
+                            <tr
+                              className={[
+                                'border-b border-slate-50 transition-colors',
+                                hasMultiple
+                                  ? 'cursor-pointer hover:bg-slate-50'
+                                  : 'hover:bg-slate-50',
+                              ].join(' ')}
+                              onClick={hasMultiple ? () => toggleProduct(row.productId) : undefined}
+                            >
+                              {/* Expand chevron */}
+                              <td className="px-2 py-2 text-center">
+                                {hasMultiple && (
+                                  <ChevronRight
+                                    size={12}
+                                    className={[
+                                      'text-slate-400 transition-transform duration-150',
+                                      isExpanded ? 'rotate-90' : '',
+                                    ].join(' ')}
+                                  />
+                                )}
+                              </td>
+
+                              {/* Product name */}
+                              <td className="px-4 py-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium text-slate-900">{row.nombre}</span>
+                                  {row.aplicaciones.some((a) => a.tieneCambios) && (
+                                    <History size={12} className="text-amber-500 shrink-0" />
+                                  )}
+                                </div>
+                                {/* Show lot name inline when there's only one application */}
+                                {!hasMultiple && (
+                                  <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                                    {row.aplicaciones[0]?.loteLabel}
+                                    {' · '}
+                                    {row.aplicaciones[0]?.varianteLabel}
+                                    {' · '}
+                                    {row.aplicaciones[0]?.dosis.toLocaleString('es-VE', {
+                                      maximumFractionDigits: 3,
+                                    })}
+                                    {' / ha'}
+                                  </div>
+                                )}
+                                {hasMultiple && (
+                                  <div className="text-[10px] text-slate-400 mt-0.5">
+                                    {row.aplicaciones.length} aplicaciones · click para expandir
+                                  </div>
+                                )}
+                              </td>
+
+                              <td className="px-4 py-2 text-slate-500">
+                                {row.subcategoria ?? '—'}
+                              </td>
+                              <td className="px-4 py-2 text-slate-500">{row.proveedor ?? '—'}</td>
+                              <td className="px-4 py-2 text-right font-mono text-slate-700">
+                                {row.totalHa.toLocaleString('es-VE', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="px-4 py-2 text-right font-mono font-semibold text-slate-900">
+                                {row.totalCantidadFisica.toLocaleString('es-VE', {
+                                  maximumFractionDigits: 3,
+                                })}
+                                {row.unidadComun && (
+                                  <span className="ml-1 font-normal text-slate-500">
+                                    {row.unidadComun}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-right font-mono font-semibold text-green-700">
+                                ${row.totalCosto.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="px-4 py-2">
+                                {!hasMultiple && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditando(row.aplicaciones[0].pp);
+                                    }}
+                                    className="text-slate-400 hover:text-green-700 transition-colors"
+                                    title="Editar"
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+
+                            {/* ── Detail rows (1 per lote, shown when expanded) ── */}
+                            {isExpanded &&
+                              row.aplicaciones.map((ap) => (
+                                <tr
+                                  key={ap.pp.id}
+                                  className="border-b border-slate-50 bg-slate-50/70"
+                                >
+                                  <td className="px-2 py-1.5" />
+                                  {/* Lot name + variant + dose */}
+                                  <td className="px-4 py-1.5 pl-8">
+                                    <div className="flex items-center gap-1 text-slate-700">
+                                      {ap.loteLabel}
+                                      {ap.tieneCambios && (
+                                        <History size={11} className="text-amber-500 shrink-0" />
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 mt-0.5">
+                                      {ap.varianteLabel} · {ap.dosis.toLocaleString('es-VE', {
+                                        maximumFractionDigits: 3,
+                                      })} / ha
+                                    </div>
+                                  </td>
+                                  {/* Subcategoría col — reused for empty spacer */}
+                                  <td className="px-4 py-1.5" />
+                                  {/* Proveedor col — precio por unidad */}
+                                  <td className="px-4 py-1.5 text-slate-400 tabular-nums">
+                                    ${ap.precioUnitario.toLocaleString('es-VE', {
+                                      minimumFractionDigits: 2,
+                                    })} / u.
+                                  </td>
+                                  {/* Ha */}
+                                  <td className="px-4 py-1.5 text-right font-mono text-slate-600">
+                                    {ap.ha.toLocaleString('es-VE', { maximumFractionDigits: 2 })}
+                                  </td>
+                                  {/* Cantidad */}
+                                  <td className="px-4 py-1.5 text-right font-mono text-slate-700 font-medium">
+                                    {ap.cantidadFisica.toLocaleString('es-VE', {
+                                      maximumFractionDigits: 3,
+                                    })}
+                                    <span className="ml-1 font-normal text-slate-500">
+                                      {ap.unidad}
+                                    </span>
+                                  </td>
+                                  {/* Costo */}
+                                  <td className="px-4 py-1.5 text-right font-mono text-green-700">
+                                    ${ap.costo.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                                  </td>
+                                  {/* Edit */}
+                                  <td className="px-4 py-1.5">
+                                    <button
+                                      onClick={() => setEditando(ap.pp)}
+                                      className="text-slate-400 hover:text-green-700 transition-colors"
+                                      title="Editar"
+                                    >
+                                      <Pencil size={13} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </Card>
         );
       })}
 
+      {/* Modals */}
       {editando && (
         <EditarPlanProductoModal
           open={!!editando}
-          planProducto={editando as Parameters<typeof EditarPlanProductoModal>[0]['planProducto']}
+          planProducto={
+            editando as Parameters<typeof EditarPlanProductoModal>[0]['planProducto']
+          }
           lotes={lotes}
           onClose={() => setEditando(null)}
           onGuardado={(planActualizado) => {

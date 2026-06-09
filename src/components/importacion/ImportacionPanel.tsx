@@ -656,7 +656,7 @@ export default function ImportacionPanel() {
   // ── FASE: Preview ─────────────────────────────────────────────────────────
   if (fase === 'preview' || fase === 'importando') {
     return (
-      <div className="space-y-4 max-w-4xl">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900">
@@ -767,7 +767,7 @@ export default function ImportacionPanel() {
   if (fase === 'resultado' && resultado) {
     const tieneProblemas = resultado.errores.length > 0 || resultado.warnings.length > 0;
     return (
-      <div className="space-y-4 max-w-3xl">
+      <div className="space-y-4">
         <Alert
           variant={resultado.errores.length === 0 ? 'success' : 'warning'}
           title="Importación completada"
@@ -829,7 +829,7 @@ export default function ImportacionPanel() {
 
   // ── FASE: Inicial ─────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
@@ -906,56 +906,6 @@ export default function ImportacionPanel() {
       </div>
 
       {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
-
-      <Card>
-        <CardHeader>
-          <h3 className="text-sm font-semibold text-slate-900">Orden de importación y formato</h3>
-        </CardHeader>
-        <CardBody className="space-y-4 text-xs text-slate-600">
-          <Alert variant="info">
-            <strong>Primera vez:</strong> podés cargar todas las hojas en un solo archivo.
-            El sistema importa en el orden correcto (Técnicos → Productos → Productores → Lotes → Plan)
-            y valida referencias cruzadas dentro del propio archivo — no necesitás hacer importaciones separadas.
-          </Alert>
-
-          {[
-            {
-              num: '1', hoja: 'Técnicos',
-              cols: 'Nombre | Rol (tecnico / coordinador / gerente) | Contacto',
-              nota: '',
-            },
-            {
-              num: '2', hoja: 'Productos',
-              cols: 'Proveedor | Nombre | Categoría | Subcategoría | Presentación | Unidad | Precio',
-              nota: 'Una fila por variante. Mismo producto con varias presentaciones → una fila por presentación.',
-            },
-            {
-              num: '3', hoja: 'Productores',
-              cols: 'Nombre | Banco | Crédito Aprobado | Estado | Localidad | Nombre Técnico | Nombre Coordinador | Nombre Gerente',
-              nota: '',
-            },
-            {
-              num: '4', hoja: 'Lotes',
-              cols: 'Nombre Productor | Nombre Lote | Hectáreas | Estado',
-              nota: '',
-            },
-            {
-              num: '5', hoja: 'Plan',
-              cols: 'Nombre Productor | Nombre Lote (vacío = todos los lotes) | Nombre Producto | Dosis/Ha',
-              nota: 'El producto debe existir en la hoja Productos o ya estar en el catálogo.',
-            },
-          ].map(({ num, hoja, cols, nota }) => (
-            <div key={hoja}>
-              <p className="font-semibold text-slate-800 mb-0.5">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-100 text-green-700 font-bold mr-1.5">{num}</span>
-                Hoja: {hoja}
-              </p>
-              <p className="font-mono bg-slate-50 px-2 py-1 rounded break-all">{cols}</p>
-              {nota && <p className="text-slate-400 mt-0.5 italic">{nota}</p>}
-            </div>
-          ))}
-        </CardBody>
-      </Card>
     </div>
   );
 }

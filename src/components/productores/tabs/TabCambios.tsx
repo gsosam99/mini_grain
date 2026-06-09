@@ -1,5 +1,10 @@
+'use client';
+
+import { useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import SortableHeader from '@/components/ui/SortableHeader';
+import { useSortable, applySortable } from '@/hooks/useSortable';
 import { ArrowRight } from 'lucide-react';
 
 interface PlanCambio {
@@ -34,19 +39,27 @@ const tipoLabel: Record<string, { label: string; variant: 'yellow' | 'red' | 'bl
   cambio_dosis: { label: 'Cambio de dosis', variant: 'gray' },
 };
 
+type SortKey = 'fecha' | 'producto' | 'tipo';
+
 export default function TabCambios({ plan }: Props) {
-  const cambios: (PlanCambio & { productoNombre: string })[] = [];
+  const { sort, toggle } = useSortable<SortKey>('fecha', 'desc');
 
-  for (const pp of plan?.plan_productos ?? []) {
-    for (const cambio of pp.plan_cambios) {
-      cambios.push({
-        ...cambio,
-        productoNombre: pp.variante?.producto?.nombre ?? 'Producto eliminado',
-      });
+  const cambios = useMemo(() => {
+    const base: (PlanCambio & { productoNombre: string })[] = [];
+    for (const pp of plan?.plan_productos ?? []) {
+      for (const cambio of pp.plan_cambios) {
+        base.push({
+          ...cambio,
+          productoNombre: pp.variante?.producto?.nombre ?? 'Producto eliminado',
+        });
+      }
     }
-  }
-
-  cambios.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    return applySortable(base, sort, (c, key) => ({
+      fecha: new Date(c.fecha).getTime(),
+      producto: c.productoNombre,
+      tipo: tipoLabel[c.tipo]?.label ?? c.tipo,
+    }[key]));
+  }, [plan, sort]);
 
   if (cambios.length === 0) {
     return (
@@ -64,21 +77,19 @@ export default function TabCambios({ plan }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Fecha</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Producto</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Tipo</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Cambio</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Δ Costo</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Motivo</th>
+              <SortableHeader label="Fecha" sortKey="fecha" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+              <SortableHeader label="Producto" sortKey="producto" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+              <SortableHeader label="Tipo" sortKey="tipo" currentKey={sort.key} dir={sort.dir} onSort={toggle} />
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Cambio</th>
+              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Δ Costo</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Motivo</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {cambios.map((c) => {
               const { label, variant } = tipoLabel[c.tipo] ?? { label: c.tipo, variant: 'gray' };
-              const costoOriginal =
-                c.variante_original ? c.variante_original.precio : null;
-              const costoNuevo =
-                c.variante_nueva ? c.variante_nueva.precio : null;
+              const costoOriginal = c.variante_original ? c.variante_original.precio : null;
+              const costoNuevo = c.variante_nueva ? c.variante_nueva.precio : null;
               const deltaCosto =
                 costoOriginal !== null && costoNuevo !== null ? costoNuevo - costoOriginal : null;
 

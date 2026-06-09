@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Grain — Manual de uso · Ciclo 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+    .slide { position: absolute; inset: 0; transition: transform 0.38s cubic-bezier(0.4,0,0.2,1); overflow-y: auto; overflow-x: hidden; }
+    .dot { width: 7px; height: 7px; border-radius: 9999px; background: #cbd5e1; cursor: pointer; transition: all 0.25s; flex-shrink: 0; }
+    .dot.active { background: #15803d; width: 22px; border-radius: 4px; }
+    .badge { display: inline-flex; align-items: center; border-radius: 9999px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    .mockup { transform-origin: top left; }
+    .tag { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .tip { display: flex; gap: 10px; border-radius: 10px; padding: 12px 14px; border-left: 3px solid; font-size: 13px; }
+    .tip-green { background: #f0fdf4; border-color: #15803d; color: #166534; }
+    .tip-amber { background: #fffbeb; border-color: #d97706; color: #92400e; }
+    .tip-rose { background: #fff1f2; border-color: #e11d48; color: #9f1239; }
+    .tip-blue { background: #eff6ff; border-color: #2563eb; color: #1e40af; }
+    .kbd { display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; border: 1px solid #e2e8f0; background: #f8fafc; padding: 1px 7px; font-size: 11px; font-family: monospace; color: #475569; }
+  </style>
+</head>
+<body class="bg-slate-50 overflow-hidden select-none">
+
+<!-- ── Top bar ─────────────────────────────────────────────────────────── -->
+<div class="fixed top-0 inset-x-0 z-50 h-12 bg-white border-b border-slate-200 flex items-center justify-between px-5" style="backdrop-filter:blur(8px);">
+  <div class="flex items-center gap-2">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-9"/>
+      <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-2-3.4 1.7 1.4 5.3 1.5 4.5 0z"/>
+      <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.4-3.7-1.8 1-4.6.8-4.6 1.1z"/>
+    </svg>
+    <span class="text-sm font-semibold text-slate-800">Mini Grain</span>
+    <span class="text-slate-300 text-sm">·</span>
+    <span class="text-xs text-slate-500">Manual de uso · Ciclo 2026</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <div id="dots" class="flex items-center gap-1.5"></div>
+    <span id="counter" class="text-xs text-slate-400 font-mono w-10 text-right"></span>
+  </div>
+</div>
+
+<!-- ── Slides wrapper ─────────────────────────────────────────────────── -->
+<div class="fixed inset-0 pt-12 pb-12" style="overflow:hidden;">
+<div id="wrap" style="position:relative;height:100%;width:100%;">
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 1 — PORTADA
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-gradient-to-br from-slate-900 via-slate-800 to-green-950" data-i="0">
+  <div class="flex flex-col items-center justify-center h-full px-8 text-center gap-6">
+    <div class="w-20 h-20 rounded-2xl bg-green-700/30 border border-green-500/30 flex items-center justify-center">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-9"/>
+        <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-2-3.4 1.7 1.4 5.3 1.5 4.5 0z"/>
+        <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.4-3.7-1.8 1-4.6.8-4.6 1.1z"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="text-5xl font-bold text-white tracking-tight">Mini Grain</h1>
+      <p class="text-green-400 text-lg mt-2 font-medium">Polar en el Campo · Ciclo 2026</p>
+    </div>
+    <p class="text-slate-400 text-base max-w-lg leading-relaxed">
+      Herramienta interna para planificar, monitorear y gestionar el crédito agrícola de los productores.
+    </p>
+    <div class="flex gap-4 mt-2">
+      <div class="rounded-xl border border-slate-700 bg-slate-800/60 px-6 py-3 text-center">
+        <p class="text-2xl font-bold text-white">35</p>
+        <p class="text-xs text-slate-400 mt-0.5">Productores</p>
+      </div>
+      <div class="rounded-xl border border-slate-700 bg-slate-800/60 px-6 py-3 text-center">
+        <p class="text-2xl font-bold text-white">264</p>
+        <p class="text-xs text-slate-400 mt-0.5">Lotes</p>
+      </div>
+      <div class="rounded-xl border border-slate-700 bg-slate-800/60 px-6 py-3 text-center">
+        <p class="text-2xl font-bold text-green-400">9.880</p>
+        <p class="text-xs text-slate-400 mt-0.5">Ítems de plan</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 mt-4 text-slate-500 text-xs">
+      <span>Navegá con</span>
+      <span class="kbd">←</span><span class="kbd">→</span>
+      <span>o los botones de abajo</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 2 — LA INTERFAZ / SIDEBAR
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="1">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-slate-200 text-slate-600 mb-4">Navegación</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">La interfaz de la aplicación</h2>
+    <p class="text-slate-500 text-sm mb-6">Una barra lateral de íconos da acceso a todos los módulos. Pasá el cursor sobre un ícono para ver su nombre.</p>
+    <div class="flex gap-6 flex-1">
+      <!-- Sidebar mockup -->
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col items-center py-3 gap-1" style="width:52px;min-width:52px;">
+        <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center mb-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-9"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-2-3.4 1.7 1.4 5.3 1.5 4.5 0z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.4-3.7-1.8 1-4.6.8-4.6 1.1z"/></svg>
+        </div>
+        <!-- Dashboard active -->
+        <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg></div>
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+      </div>
+      <!-- Module list -->
+      <div class="flex-1 grid grid-cols-2 gap-3">
+        <div class="bg-white rounded-xl border border-green-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-800">Dashboard</p>
+          </div>
+          <p class="text-xs text-slate-500">Vista general del ciclo: KPIs, balance de crédito vs costo, tabla de estado por productor.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-800">Productores</p>
+          </div>
+          <p class="text-xs text-slate-500">Directorio de productores con filtros. Accedé al perfil completo de cada uno.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-800">Productos</p>
+          </div>
+          <p class="text-xs text-slate-500">Catálogo de insumos y variantes. Desde aquí se gestionan precios y presentaciones.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-lg bg-cyan-50 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-800">Análisis de Suelos</p>
+          </div>
+          <p class="text-xs text-slate-500">Resultados por lote: pH, cal necesaria, KMAG. Indicadores de salud del suelo.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-800">Importación</p>
+          </div>
+          <p class="text-xs text-slate-500">Cargá el Excel del plan agrícola. Importa técnicos, productos, productores y lotes.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-800">Cambios Logísticos</p>
+          </div>
+          <p class="text-xs text-slate-500">Aplicá sustituciones, ajustes de precio o dosis a múltiples planes de una sola vez.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 3 — DASHBOARD KPIs
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="2">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-green-100 text-green-700 mb-4">Dashboard</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Vista general del ciclo</h2>
+    <p class="text-slate-500 text-sm mb-6">La primera pantalla que ves al entrar. Muestra el estado financiero del proyecto completo.</p>
+    <!-- KPI cards mockup -->
+    <div class="grid grid-cols-4 gap-3 mb-3">
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs text-slate-500">Productores</p>
+          <div class="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+        </div>
+        <p class="text-2xl font-bold text-slate-900">35</p>
+        <p class="text-xs text-rose-500 mt-1">2 exceden su crédito</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs text-slate-500">Hectáreas totales</p>
+          <div class="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+        </div>
+        <p class="text-2xl font-bold text-slate-900">3.241,5</p>
+      </div>
+      <!-- Balance card col-span-2 -->
+      <div class="col-span-2 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500">Balance del proyecto</p>
+              <p class="text-lg font-bold text-rose-600">−$18.430 <span class="text-xs font-normal text-slate-400">déficit</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <div><p class="text-slate-400 mb-0.5">Crédito aprobado</p><p class="font-semibold text-slate-700">$2.100.000</p></div>
+            <span class="text-slate-300">→</span>
+            <div><p class="text-slate-400 mb-0.5">Costo del plan</p><p class="font-semibold text-rose-600">$2.118.430</p></div>
+          </div>
+        </div>
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full rounded-full bg-rose-500" style="width:100.8%"></div>
+        </div>
+        <div class="flex justify-between mt-1"><span class="text-[10px] text-slate-300">0%</span><span class="text-[10px] text-slate-300">100%</span></div>
+      </div>
+    </div>
+    <!-- Explanation callouts -->
+    <div class="grid grid-cols-3 gap-3 mt-1">
+      <div class="tip tip-blue"><span>①</span><div><b>Productores</b> — muestra cuántos exceden su crédito asignado.</div></div>
+      <div class="tip tip-green"><span>②</span><div><b>Hectáreas</b> — suma de todos los lotes registrados.</div></div>
+      <div class="tip tip-rose"><span>③</span><div><b>Balance</b> — <b>déficit</b> si el costo supera el crédito. La barra se pone roja al pasar 100%.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 4 — TABLA DE CRÉDITO
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="3">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-green-100 text-green-700 mb-4">Dashboard</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Tabla de estado de crédito</h2>
+    <p class="text-slate-500 text-sm mb-5">Debajo de los KPIs, una tabla completa con el estado de cada productor. Todas las columnas son ordenables.</p>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 bg-slate-50">
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-green-700">PRODUCTOR ↓</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-slate-500">ESTADO</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-slate-500">BANCO</th>
+            <th class="px-4 py-2.5 text-right text-xs font-medium text-slate-500">CRÉDITO ↕</th>
+            <th class="px-4 py-2.5 text-right text-xs font-medium text-slate-500">COSTO PLAN ↕</th>
+            <th class="px-4 py-2.5 text-right text-xs font-medium text-slate-500">Δ ↕</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-2.5 font-medium text-slate-900 text-xs">Angela Rosa Guedez Morales</td>
+            <td class="px-4 py-2.5 text-xs text-slate-500">Portuguesa</td>
+            <td class="px-4 py-2.5"><span class="badge bg-blue-100 text-blue-700">BCP</span></td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs text-slate-700">$327.500</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs text-slate-700">$327.570</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold text-rose-600">−$70</td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-2.5 font-medium text-slate-900 text-xs">Cesar Igor Padilla Martínez</td>
+            <td class="px-4 py-2.5 text-xs text-slate-500">Barinas</td>
+            <td class="px-4 py-2.5"><span class="badge bg-blue-100 text-blue-700">BANAGRO</span></td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs text-slate-700">$140.000</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs text-slate-700">$138.663</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold text-green-700">+$1.337</td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-2.5 font-medium text-slate-900 text-xs">María Torres Linares</td>
+            <td class="px-4 py-2.5 text-xs text-slate-500">Portuguesa</td>
+            <td class="px-4 py-2.5"><span class="badge bg-blue-100 text-blue-700">BCP</span></td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs text-slate-700">$95.000</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs text-slate-700">$87.400</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold text-green-700">+$7.600</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="tip tip-green"><b>Δ en verde</b> — el crédito cubre el plan. Hay margen disponible.</div>
+      <div class="tip tip-rose"><b>Δ en rojo</b> — el costo supera el crédito. Este productor necesita ajuste o crédito adicional.</div>
+      <div class="tip tip-blue">Hacé click en cualquier encabezado de columna para <b>ordenar ascendente/descendente</b>.</div>
+      <div class="tip tip-amber">El <b>Δ global</b> en la tarjeta de balance es la suma de todos los deltas individuales.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 5 — LISTA DE PRODUCTORES
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="4">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-blue-100 text-blue-700 mb-4">Productores</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Directorio de productores</h2>
+    <p class="text-slate-500 text-sm mb-5">Buscá, filtrá y accedé al perfil completo de cada productor desde esta tabla.</p>
+    <!-- Filters bar mockup -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+      <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+        <div class="flex-1 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span class="text-xs text-slate-400">Buscar por nombre, localidad o técnico…</span>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5">
+          <span class="text-xs text-slate-500">Todos los estados</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5">
+          <span class="text-xs text-slate-500">Todos los bancos</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-slate-200 bg-slate-50">
+            <th class="px-4 py-2 text-left font-semibold text-green-700 cursor-pointer">PRODUCTOR ↓</th>
+            <th class="px-4 py-2 text-left font-medium text-slate-500 cursor-pointer">ESTADO ↕</th>
+            <th class="px-4 py-2 text-left font-medium text-slate-500 cursor-pointer">BANCO ↕</th>
+            <th class="px-4 py-2 text-right font-medium text-slate-500 cursor-pointer">HA ↕</th>
+            <th class="px-4 py-2 text-right font-medium text-slate-500 cursor-pointer">CRÉDITO ↕</th>
+            <th class="px-4 py-2 text-left font-medium text-slate-500 cursor-pointer">TÉCNICO ↕</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr class="hover:bg-slate-50 cursor-pointer">
+            <td class="px-4 py-2.5 font-medium text-green-700">Angela Rosa Guedez Morales</td>
+            <td class="px-4 py-2.5 text-slate-500">Portuguesa · Portuguesa</td>
+            <td class="px-4 py-2.5"><span class="badge bg-blue-100 text-blue-700">BCP</span></td>
+            <td class="px-4 py-2.5 text-right font-mono">485,0</td>
+            <td class="px-4 py-2.5 text-right font-mono">$327.500</td>
+            <td class="px-4 py-2.5 text-slate-500">Luis Pérez</td>
+            <td class="px-4 py-2.5 text-slate-400">›</td>
+          </tr>
+          <tr class="hover:bg-slate-50 cursor-pointer">
+            <td class="px-4 py-2.5 font-medium text-green-700">Cesar Igor Padilla Martínez</td>
+            <td class="px-4 py-2.5 text-slate-500">Barinas · Barinas</td>
+            <td class="px-4 py-2.5"><span class="badge bg-blue-100 text-blue-700">BANAGRO</span></td>
+            <td class="px-4 py-2.5 text-right font-mono">214,5</td>
+            <td class="px-4 py-2.5 text-right font-mono">$140.000</td>
+            <td class="px-4 py-2.5 text-slate-500">Ana Rondón</td>
+            <td class="px-4 py-2.5 text-slate-400">›</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="tip tip-blue">Hacé click en el <b>nombre del productor</b> o en el ícono <b>›</b> para abrir su perfil completo.</div>
+      <div class="tip tip-green">Los <b>filtros de estado y banco</b> se combinan con la búsqueda de texto para resultados precisos.</div>
+      <div class="tip tip-amber">Los encabezados con <b>↕</b> son ordenables. El activo muestra <b>↑</b> o <b>↓</b> en verde.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 6 — PERFIL DEL PRODUCTOR
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="5">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-blue-100 text-blue-700 mb-4">Productores</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Perfil del productor — 5 pestañas</h2>
+    <p class="text-slate-500 text-sm mb-5">Cada productor tiene un perfil con 5 pestañas. Toda la información del ciclo en un solo lugar.</p>
+    <!-- Tab bar mockup -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+      <div class="px-6 py-4 border-b border-slate-100">
+        <p class="text-sm font-bold text-slate-900">Angela Rosa Guedez Morales</p>
+        <p class="text-xs text-slate-500 mt-0.5">Portuguesa · Portuguesa</p>
+      </div>
+      <div class="flex border-b border-slate-200 px-6">
+        <button class="text-xs font-medium text-slate-500 px-4 py-2.5 border-b-2 border-transparent hover:text-slate-700">Información</button>
+        <button class="text-xs font-medium text-slate-500 px-4 py-2.5 border-b-2 border-transparent hover:text-slate-700">Lotes</button>
+        <button class="text-xs font-bold text-green-700 px-4 py-2.5 border-b-2 border-green-700">Plan Agrícola</button>
+        <button class="text-xs font-medium text-slate-500 px-4 py-2.5 border-b-2 border-transparent hover:text-slate-700">Crédito</button>
+        <button class="text-xs font-medium text-slate-500 px-4 py-2.5 border-b-2 border-transparent hover:text-slate-700">Cambios Logísticos</button>
+      </div>
+      <div class="px-6 py-3 text-xs text-slate-400 italic">Contenido de la pestaña activa…</div>
+    </div>
+    <!-- Tab descriptions -->
+    <div class="grid grid-cols-5 gap-3">
+      <div class="bg-white rounded-xl border border-slate-200 p-3 text-center">
+        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 mb-1">Información</p>
+        <p class="text-[10px] text-slate-400">Datos del productor, banco, crédito, técnico asignado.</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-3 text-center">
+        <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center mx-auto mb-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 mb-1">Lotes</p>
+        <p class="text-[10px] text-slate-400">Parcelas con hectáreas, estado y análisis de suelos.</p>
+      </div>
+      <div class="bg-white rounded-xl border border-green-300 p-3 text-center">
+        <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mx-auto mb-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <p class="text-xs font-bold text-green-700 mb-1">Plan Agrícola</p>
+        <p class="text-[10px] text-slate-400">Todos los productos del plan, agrupados por categoría.</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-3 text-center">
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center mx-auto mb-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 mb-1">Crédito</p>
+        <p class="text-[10px] text-slate-400">Crédito aprobado vs costo del plan, delta individual.</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-3 text-center">
+        <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mx-auto mb-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 mb-1">Cambios</p>
+        <p class="text-[10px] text-slate-400">Historial de sustituciones y ajustes logísticos.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 7 — PLAN AGRÍCOLA (CATEGORÍAS)
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="6">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-green-100 text-green-700 mb-4">Plan Agrícola</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Plan organizado por categorías</h2>
+    <p class="text-slate-500 text-sm mb-5">Cada categoría es un acordeón. Hacé click en el encabezado para expandir o contraer.</p>
+    <!-- Category accordion mockup -->
+    <div class="flex-1 space-y-2">
+      <!-- Open category -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 flex items-center justify-between bg-slate-50 cursor-pointer">
+          <div class="flex items-center gap-2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <p class="text-sm font-semibold text-slate-700">1. Insumos</p>
+            <span class="text-xs text-slate-400">28 productos</span>
+          </div>
+          <span class="text-sm font-mono text-slate-700">$228.553,33</span>
+        </div>
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50">
+              <th class="w-7 px-2 py-2"></th>
+              <th class="px-4 py-2 text-left font-semibold text-green-700">PRODUCTO ↓</th>
+              <th class="px-4 py-2 text-left font-medium text-slate-500">SUBCATEGORÍA ↕</th>
+              <th class="px-4 py-2 text-left font-medium text-slate-500">PROVEEDOR ↕</th>
+              <th class="px-4 py-2 text-right font-medium text-slate-500">HA TOTALES ↕</th>
+              <th class="px-4 py-2 text-right font-medium text-slate-500">CANTIDAD ↕</th>
+              <th class="px-4 py-2 text-right font-medium text-slate-500">COSTO TOTAL ↕</th>
+              <th class="px-4 py-2 w-7"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            <tr class="hover:bg-slate-50">
+              <td class="px-2 py-2 text-center text-slate-400">›</td>
+              <td class="px-4 py-2">
+                <p class="font-medium text-slate-900">Xpandrop</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">12 aplicaciones · click para expandir</p>
+              </td>
+              <td class="px-4 py-2 text-slate-500">Agroq./Bio./Mej.</td>
+              <td class="px-4 py-2 text-slate-500">Cathequim</td>
+              <td class="px-4 py-2 text-right font-mono text-slate-700">318,44</td>
+              <td class="px-4 py-2 text-right font-mono font-semibold text-slate-900">12 <span class="font-normal text-slate-400">lt</span></td>
+              <td class="px-4 py-2 text-right font-mono font-semibold text-green-700">$144,00</td>
+              <td class="px-4 py-2"></td>
+            </tr>
+            <tr class="hover:bg-slate-50">
+              <td class="px-2 py-2"></td>
+              <td class="px-4 py-2">
+                <p class="font-medium text-slate-900">ClorGreen Plus</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Lote El Palmar · 1 lt · 0,033 / ha</p>
+              </td>
+              <td class="px-4 py-2 text-slate-500">Herbicida</td>
+              <td class="px-4 py-2 text-slate-500">Servagro</td>
+              <td class="px-4 py-2 text-right font-mono text-slate-700">26,53</td>
+              <td class="px-4 py-2 text-right font-mono font-semibold text-slate-900">1 <span class="font-normal text-slate-400">lt</span></td>
+              <td class="px-4 py-2 text-right font-mono font-semibold text-green-700">$12,00</td>
+              <td class="px-4 py-2 text-slate-400 text-center cursor-pointer">✎</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Closed category -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div class="px-4 py-3 flex items-center justify-between bg-slate-50 cursor-pointer">
+          <div class="flex items-center gap-2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-90deg)"><polyline points="6 9 12 15 18 9"/></svg>
+            <p class="text-sm font-semibold text-slate-700">2. Mecanización</p>
+            <span class="text-xs text-slate-400">5 productos</span>
+          </div>
+          <span class="text-sm font-mono text-slate-700">$45.200,00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 8 — PLAN AGRÍCOLA (DESGLOSE POR LOTE)
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="7">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-green-100 text-green-700 mb-4">Plan Agrícola</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Desglose por lote</h2>
+    <p class="text-slate-500 text-sm mb-5">Cuando un producto se aplica a múltiples lotes, el ícono <b>›</b> expande el detalle de cada aplicación.</p>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+      <table class="w-full text-xs">
+        <tbody>
+          <!-- Aggregate row (expanded) -->
+          <tr class="bg-white border-b border-slate-100 cursor-pointer">
+            <td class="px-2 py-2.5 text-center text-green-700 font-bold">↓</td>
+            <td class="px-4 py-2.5">
+              <p class="font-semibold text-slate-900">Xpandrop</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">12 aplicaciones · click para expandir</p>
+            </td>
+            <td class="px-4 py-2.5 text-slate-500">Agroq./Bio./Mej.</td>
+            <td class="px-4 py-2.5 text-slate-500">Cathequim</td>
+            <td class="px-4 py-2.5 text-right font-mono text-slate-700">318,44</td>
+            <td class="px-4 py-2.5 text-right font-mono font-bold text-slate-900">12 <span class="font-normal text-slate-400">lt</span></td>
+            <td class="px-4 py-2.5 text-right font-mono font-bold text-green-700">$144,00</td>
+            <td class="px-4 py-2.5"></td>
+          </tr>
+          <!-- Detail rows -->
+          <tr class="bg-slate-50/70 border-b border-slate-50">
+            <td class="px-2 py-1.5"></td>
+            <td class="px-4 py-1.5 pl-8">
+              <p class="text-slate-700">Lote El Palmar</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">1 lt · 0,033 / ha</p>
+            </td>
+            <td class="px-4 py-1.5 text-slate-400">—</td>
+            <td class="px-4 py-1.5 text-slate-400">$12,00 / u.</td>
+            <td class="px-4 py-1.5 text-right font-mono text-slate-600">26,53</td>
+            <td class="px-4 py-1.5 text-right font-mono text-slate-700 font-medium">1 <span class="font-normal text-slate-400">lt</span></td>
+            <td class="px-4 py-1.5 text-right font-mono text-green-700">$12,00</td>
+            <td class="px-4 py-1.5 text-center text-slate-400 cursor-pointer">✎</td>
+          </tr>
+          <tr class="bg-slate-50/70 border-b border-slate-50">
+            <td class="px-2 py-1.5"></td>
+            <td class="px-4 py-1.5 pl-8">
+              <p class="text-slate-700">Lote La Esperanza</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">1 lt · 0,024 / ha</p>
+            </td>
+            <td class="px-4 py-1.5 text-slate-400">—</td>
+            <td class="px-4 py-1.5 text-slate-400">$12,00 / u.</td>
+            <td class="px-4 py-1.5 text-right font-mono text-slate-600">26,31</td>
+            <td class="px-4 py-1.5 text-right font-mono text-slate-700 font-medium">1 <span class="font-normal text-slate-400">lt</span></td>
+            <td class="px-4 py-1.5 text-right font-mono text-green-700">$12,00</td>
+            <td class="px-4 py-1.5 text-center text-slate-400 cursor-pointer">✎</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <p class="text-xs font-semibold text-slate-700 mb-2">¿Qué significa cada columna?</p>
+        <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2">
+          <div class="flex gap-3 text-xs"><span class="font-semibold text-slate-700 w-24 shrink-0">Ha totales</span><span class="text-slate-500">Suma de hectáreas donde se aplica este producto.</span></div>
+          <div class="flex gap-3 text-xs"><span class="font-semibold text-slate-700 w-24 shrink-0">Cantidad</span><span class="text-slate-500">Litros/kg/unidades reales a comprar (redondeado a la presentación comercial).</span></div>
+          <div class="flex gap-3 text-xs"><span class="font-semibold text-slate-700 w-24 shrink-0">Costo total</span><span class="text-slate-500">Cantidad × Precio unitario.</span></div>
+          <div class="flex gap-3 text-xs"><span class="font-semibold text-slate-700 w-24 shrink-0">✎ Editar</span><span class="text-slate-500">Cambia dosis o variante de esa aplicación específica y registra el cambio.</span></div>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <div class="tip tip-green">La fila de <b>producto agregado</b> muestra los totales de TODOS sus lotes.</div>
+        <div class="tip tip-amber">Expandí para ver el desglose y editá la aplicación del <b>lote específico</b> que necesitás cambiar.</div>
+        <div class="tip tip-blue">El ícono <svg class="inline" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg> en el nombre indica que esa aplicación tuvo cambios logísticos previos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 9 — LOTES
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="8">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-green-100 text-green-700 mb-4">Lotes</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Gestión de lotes y análisis de suelos</h2>
+    <p class="text-slate-500 text-sm mb-5">La pestaña <b>Lotes</b> muestra las parcelas del productor con su estado de cal y análisis disponibles.</p>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 bg-slate-50">
+            <th class="px-4 py-2.5 text-left text-xs font-semibold text-green-700">LOTE ↓</th>
+            <th class="px-4 py-2.5 text-right text-xs font-medium text-slate-500">HA ↕</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-slate-500">ESTADO ↕</th>
+            <th class="px-4 py-2.5 text-left text-xs font-medium text-slate-500">ANÁLISIS SUELOS</th>
+            <th class="px-4 py-2.5 text-center text-xs font-medium text-slate-500">CAL NECESARIA ↕</th>
+            <th class="px-4 py-2.5"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-2.5 font-medium text-slate-900 text-xs">Lote El Palmar</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs">26,53</td>
+            <td class="px-4 py-2.5 text-xs text-slate-500">Activo</td>
+            <td class="px-4 py-2.5 text-xs">
+              <span class="flex items-center gap-1 text-green-700">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+                2026 · pH 5,8
+              </span>
+            </td>
+            <td class="px-4 py-2.5 text-center"><span class="badge bg-yellow-100 text-yellow-700">Necesita cal</span></td>
+            <td class="px-4 py-2.5 text-xs text-green-700 font-medium">Ver detalle</td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-2.5 font-medium text-slate-900 text-xs">Lote La Esperanza</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs">26,31</td>
+            <td class="px-4 py-2.5 text-xs text-slate-500">Activo</td>
+            <td class="px-4 py-2.5 text-xs">
+              <span class="flex items-center gap-1 text-green-700">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+                2026 · pH 6,2
+              </span>
+            </td>
+            <td class="px-4 py-2.5 text-center"><span class="badge bg-green-100 text-green-700">OK</span></td>
+            <td class="px-4 py-2.5 text-xs text-green-700 font-medium">Ver detalle</td>
+          </tr>
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-2.5 font-medium text-slate-900 text-xs">Lote San Pedro</td>
+            <td class="px-4 py-2.5 text-right font-mono text-xs">14,80</td>
+            <td class="px-4 py-2.5 text-xs text-slate-500">Activo</td>
+            <td class="px-4 py-2.5 text-xs text-slate-400">Sin análisis</td>
+            <td class="px-4 py-2.5 text-center"><span class="badge bg-slate-100 text-slate-500">Sin datos</span></td>
+            <td class="px-4 py-2.5 text-xs text-green-700 font-medium">Ver detalle</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="tip tip-yellow" style="background:#fffbeb;border-color:#d97706;color:#92400e;"><b>Necesita cal</b> — el análisis indica dosis de cal > 0 y no hay historial reciente de encalado (últimos 2 años).</div>
+      <div class="tip tip-green"><b>OK</b> — el suelo tiene pH adecuado o ya fue encalado recientemente.</div>
+      <div class="tip tip-blue"><b>Ver detalle</b> lleva al análisis completo: Ca, Mg, Na, K, dosis KMAG, Magniplus.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 10 — CAMBIOS MASIVOS PASO 1
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="9">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-rose-100 text-rose-700 mb-4">Cambios Logísticos</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Cambio masivo — Paso 1: Definir</h2>
+    <p class="text-slate-500 text-sm mb-5">Usá este módulo cuando el mismo cambio afecta a múltiples productores. Tres pasos guiados.</p>
+    <div class="flex gap-5 flex-1">
+      <div class="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <!-- Step indicator -->
+        <div class="flex items-center gap-2 mb-5">
+          <div class="w-7 h-7 rounded-full bg-green-100 ring-2 ring-green-700 flex items-center justify-center text-xs font-bold text-green-700">1</div>
+          <div class="h-px flex-1 bg-slate-200"></div>
+          <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-400">2</div>
+          <div class="h-px flex-1 bg-slate-200"></div>
+          <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-400">3</div>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 mb-2">Tipo de cambio</p>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <div class="border border-slate-200 rounded-lg p-2.5">
+            <p class="text-xs font-medium text-slate-700">Sustitución de producto</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Reemplazá un producto por otro.</p>
+          </div>
+          <div class="border-2 border-green-600 bg-green-50 rounded-lg p-2.5">
+            <p class="text-xs font-medium text-green-800">Actualización de precio ✓</p>
+            <p class="text-[10px] text-slate-500 mt-0.5">Nuevo precio para una variante.</p>
+          </div>
+          <div class="border border-slate-200 rounded-lg p-2.5">
+            <p class="text-xs font-medium text-slate-700">Cambio de presentación</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Misma fórmula, distinto envase.</p>
+          </div>
+          <div class="border border-slate-200 rounded-lg p-2.5">
+            <p class="text-xs font-medium text-slate-700">Cambio de dosis</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Nueva dosis/ha en planes.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div>
+            <p class="text-[10px] font-medium text-slate-500 mb-1">Producto *</p>
+            <div class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 flex items-center justify-between">Xpandrop <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+          </div>
+          <div>
+            <p class="text-[10px] font-medium text-slate-500 mb-1">Variante actual *</p>
+            <div class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 flex items-center justify-between">1 lt — $12,00 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <p class="text-[10px] font-medium text-slate-500 mb-1">Nuevo precio por unidad *</p>
+          <div class="flex items-center gap-2">
+            <div class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 flex items-center gap-1"><span class="text-slate-400">$</span>14,00</div>
+            <div class="border border-slate-200 rounded-lg px-3 py-1.5 text-xs flex items-center gap-2">
+              <span class="line-through text-slate-400">$12,00</span>
+              <span class="text-rose-600 font-semibold">$14,00</span>
+            </div>
+          </div>
+        </div>
+        <div class="mb-4">
+          <p class="text-[10px] font-medium text-slate-500 mb-1">Descripción *</p>
+          <div class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">Xpandrop 1 lt — ajuste de precio jun-2026</div>
+        </div>
+        <button class="w-full bg-green-700 text-white text-xs font-semibold rounded-lg py-2 flex items-center justify-center gap-2">Ver productores afectados <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+      <div class="w-56 space-y-3">
+        <p class="text-xs font-semibold text-slate-700">Cuándo usar cada tipo</p>
+        <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5">
+          <div><p class="text-xs font-semibold text-slate-700">Sustitución</p><p class="text-[10px] text-slate-500">Proveedor discontinuó un producto. Reemplazás por uno equivalente.</p></div>
+          <div class="border-t border-slate-100 pt-2"><p class="text-xs font-semibold text-slate-700">Cambio de precio</p><p class="text-[10px] text-slate-500">El proveedor actualizó su lista de precios. Todos los planes se recalculan.</p></div>
+          <div class="border-t border-slate-100 pt-2"><p class="text-xs font-semibold text-slate-700">Presentación</p><p class="text-[10px] text-slate-500">Mismo producto pero cambia el tamaño de envase disponible.</p></div>
+          <div class="border-t border-slate-100 pt-2"><p class="text-xs font-semibold text-slate-700">Dosis</p><p class="text-[10px] text-slate-500">Ajuste agronómico que aplica a múltiples productores.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 11 — CAMBIOS MASIVOS PASO 2 Y 3
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="10">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-rose-100 text-rose-700 mb-4">Cambios Logísticos</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Cambio masivo — Pasos 2 y 3: Alcance y Confirmación</h2>
+    <p class="text-slate-500 text-sm mb-5">Después de definir el cambio, elegís a quién afecta y revisás el impacto económico antes de confirmar.</p>
+    <div class="flex gap-4 flex-1">
+      <!-- Paso 2 -->
+      <div class="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div class="flex items-center gap-2 mb-1">
+          <div class="w-6 h-6 rounded-full bg-green-100 ring-2 ring-green-700 flex items-center justify-center text-[11px] font-bold text-green-700">2</div>
+          <p class="text-sm font-semibold text-slate-700">Alcance</p>
+        </div>
+        <p class="text-[10px] text-slate-400 mb-3">¿A quiénes aplica el cambio?</p>
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div class="border-2 border-green-600 bg-green-50 rounded-lg p-2.5">
+            <p class="text-xs font-medium text-green-800">↔ Todos</p>
+            <p class="text-[10px] text-slate-500">35 productores · 312 ítems</p>
+          </div>
+          <div class="border border-slate-200 rounded-lg p-2.5">
+            <p class="text-xs font-medium text-slate-700">👥 Seleccionar</p>
+            <p class="text-[10px] text-slate-500">0 seleccionados</p>
+          </div>
+        </div>
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+          <div class="bg-slate-50 px-3 py-1.5 flex justify-between border-b border-slate-200">
+            <span class="text-[10px] font-medium text-slate-500 uppercase">Productor</span>
+            <span class="text-[10px] text-green-700 cursor-pointer">Seleccionar todos</span>
+          </div>
+          <div class="divide-y divide-slate-100 max-h-28 overflow-hidden">
+            <label class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+              <input type="checkbox" checked class="accent-green-700 w-3 h-3" />
+              <span class="flex-1 text-[10px] text-slate-800">Angela Rosa Guedez Morales</span>
+              <span class="text-[10px] text-slate-400">12 ítems</span>
+            </label>
+            <label class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+              <input type="checkbox" checked class="accent-green-700 w-3 h-3" />
+              <span class="flex-1 text-[10px] text-slate-800">Cesar Igor Padilla Martínez</span>
+              <span class="text-[10px] text-slate-400">8 ítems</span>
+            </label>
+            <label class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+              <input type="checkbox" class="accent-green-700 w-3 h-3" />
+              <span class="flex-1 text-[10px] text-slate-800">María Torres Linares</span>
+              <span class="text-[10px] text-slate-400">5 ítems</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <!-- Paso 3 -->
+      <div class="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div class="flex items-center gap-2 mb-1">
+          <div class="w-6 h-6 rounded-full bg-green-100 ring-2 ring-green-700 flex items-center justify-center text-[11px] font-bold text-green-700">3</div>
+          <p class="text-sm font-semibold text-slate-700">Vista previa y confirmar</p>
+        </div>
+        <p class="text-[10px] text-slate-400 mb-3">Revisá el impacto antes de aplicar.</p>
+        <div class="flex gap-2 mb-3">
+          <span class="badge bg-slate-100 text-slate-600">Actualización de precio</span>
+          <span class="badge bg-slate-100 text-slate-600">312 ítems · 35 productores</span>
+          <span class="badge bg-rose-100 text-rose-700">Δ +$54.600</span>
+        </div>
+        <div class="border border-slate-200 rounded-lg overflow-hidden mb-3">
+          <table class="w-full text-[10px]">
+            <thead><tr class="bg-slate-50 border-b border-slate-200"><th class="px-3 py-1.5 text-left font-medium text-slate-500">Productor</th><th class="px-3 py-1.5 text-right font-medium text-slate-500">Actual</th><th class="px-3 py-1.5 text-right font-medium text-slate-500">Nuevo</th><th class="px-3 py-1.5 text-right font-medium text-slate-500">Δ</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr><td class="px-3 py-1.5 text-slate-700">Angela Rosa G. M.</td><td class="px-3 py-1.5 text-right font-mono text-slate-600">$144</td><td class="px-3 py-1.5 text-right font-mono text-slate-600">$168</td><td class="px-3 py-1.5 text-right font-mono font-semibold text-rose-600">+$24</td></tr>
+              <tr><td class="px-3 py-1.5 text-slate-700">Cesar I. P. M.</td><td class="px-3 py-1.5 text-right font-mono text-slate-600">$96</td><td class="px-3 py-1.5 text-right font-mono text-slate-600">$112</td><td class="px-3 py-1.5 text-right font-mono font-semibold text-rose-600">+$16</td></tr>
+            </tbody>
+            <tfoot><tr class="border-t-2 border-slate-200 bg-slate-50 font-semibold"><td class="px-3 py-1.5 text-slate-700">Total</td><td class="px-3 py-1.5 text-right font-mono">$2.118.430</td><td class="px-3 py-1.5 text-right font-mono">$2.173.030</td><td class="px-3 py-1.5 text-right font-mono text-rose-600">+$54.600</td></tr></tfoot>
+          </table>
+        </div>
+        <button class="w-full bg-rose-600 text-white text-[11px] font-semibold rounded-lg py-1.5">⚠ Aplicar cambio masivo</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-3 mt-3">
+      <div class="tip tip-amber">El <b>Δ en la vista previa</b> calcula el impacto exacto en el costo total del proyecto antes de confirmar.</div>
+      <div class="tip tip-rose">El botón <b>Aplicar</b> es irreversible. Verificá los números antes de confirmar. El cambio queda registrado en el historial de cada productor.</div>
+      <div class="tip tip-blue">Cada cambio masivo genera una <b>entrada en Cambios Logísticos</b> del productor con fecha, tipo y motivo.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SLIDE 12 — ADVERTENCIAS Y TIPS
+════════════════════════════════════════════════════════════════════════ -->
+<div class="slide bg-slate-50" data-i="11">
+  <div class="max-w-5xl mx-auto px-8 py-8 h-full flex flex-col">
+    <div class="tag bg-amber-100 text-amber-700 mb-4">Referencia rápida</div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-1">Advertencias y tips clave</h2>
+    <p class="text-slate-500 text-sm mb-6">Todo lo que necesitás saber para evitar errores comunes.</p>
+    <div class="grid grid-cols-2 gap-4 flex-1">
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-rose-700 uppercase tracking-wide">⚠ Advertencias</p>
+        <div class="tip tip-rose">
+          <div>
+            <p class="font-semibold mb-0.5">Importación — productos con múltiples variantes</p>
+            <p>Si un producto tiene más de 1 variante, el importador asigna la primera. Revisá la variante asignada en el perfil del productor después de importar.</p>
+          </div>
+        </div>
+        <div class="tip tip-rose">
+          <div>
+            <p class="font-semibold mb-0.5">Cambio masivo de precio es inmediato</p>
+            <p>Al actualizar el precio de una variante, todos los planes que la usan reflejan el nuevo precio instantáneamente. No hay rollback automático.</p>
+          </div>
+        </div>
+        <div class="tip tip-rose">
+          <div>
+            <p class="font-semibold mb-0.5">El balance global puede dar falso positivo</p>
+            <p>Un productor puede tener déficit individual aunque el balance global sea positivo. Revisá la columna Δ en la tabla de crédito, no solo el KPI global.</p>
+          </div>
+        </div>
+        <div class="tip tip-amber">
+          <div>
+            <p class="font-semibold mb-0.5">Lotes sin análisis de suelos</p>
+            <p>Los lotes con "Sin datos" en la columna Cal necesaria no tienen análisis registrado para 2026. Cargalos en la sección Análisis de Suelos.</p>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-green-700 uppercase tracking-wide">✓ Tips</p>
+        <div class="tip tip-green">
+          <div>
+            <p class="font-semibold mb-0.5">Ordenar por Δ para priorizar</p>
+            <p>En la tabla del dashboard, ordená la columna Δ de menor a mayor para ver qué productores están más cerca o más lejos de su límite de crédito.</p>
+          </div>
+        </div>
+        <div class="tip tip-green">
+          <div>
+            <p class="font-semibold mb-0.5">Usá el cambio masivo para ajustes de fin de ciclo</p>
+            <p>Antes de cerrar el ciclo, usá "Actualización de precio" para reflejar los precios finales acordados con los proveedores.</p>
+          </div>
+        </div>
+        <div class="tip tip-blue">
+          <div>
+            <p class="font-semibold mb-0.5">El historial de cambios es por productor</p>
+            <p>Accedé a la pestaña "Cambios Logísticos" de cada productor para ver qué sustituciones y ajustes se hicieron en su plan.</p>
+          </div>
+        </div>
+        <div class="tip tip-blue">
+          <div>
+            <p class="font-semibold mb-0.5">Navegación con teclado</p>
+            <p>En esta presentación usá <span class="kbd">←</span> <span class="kbd">→</span> para navegar entre slides. En la app usás Tab y Enter normalmente.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 bg-green-700 text-white rounded-xl px-5 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-9"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-2-3.4 1.7 1.4 5.3 1.5 4.5 0z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.4-3.7-1.8 1-4.6.8-4.6 1.1z"/></svg>
+        <div>
+          <p class="text-sm font-bold">Mini Grain · Ciclo 2026</p>
+          <p class="text-green-300 text-xs">Polar en el Campo — Uso interno</p>
+        </div>
+      </div>
+      <p class="text-green-300 text-xs">Fin del manual · Navegá con ← para volver</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- end slides wrapper -->
+</div><!-- end fixed container -->
+
+<!-- ── Bottom nav ──────────────────────────────────────────────────────── -->
+<div class="fixed bottom-0 inset-x-0 h-12 bg-white/95 border-t border-slate-200 flex items-center justify-between px-5" style="backdrop-filter:blur(8px);">
+  <button id="btn-prev" onclick="prev()" class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+    ← Anterior
+  </button>
+  <div class="text-xs text-slate-400 hidden sm:block" id="slide-title"></div>
+  <button id="btn-next" onclick="next()" class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-700 text-white text-xs font-medium hover:bg-green-800 transition-colors">
+    Siguiente →
+  </button>
+</div>
+
+<script>
+const TITLES = [
+  'Bienvenida',
+  'La interfaz',
+  'Dashboard — KPIs',
+  'Dashboard — Tabla de crédito',
+  'Lista de productores',
+  'Perfil del productor',
+  'Plan Agrícola — Categorías',
+  'Plan Agrícola — Desglose por lote',
+  'Lotes y análisis de suelos',
+  'Cambios masivos — Paso 1',
+  'Cambios masivos — Pasos 2 y 3',
+  'Advertencias y tips',
+];
+
+let cur = 0;
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+const dotsEl = document.getElementById('dots');
+const counterEl = document.getElementById('counter');
+const titleEl = document.getElementById('slide-title');
+
+// Build dots
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot';
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  slides.forEach((s, i) => {
+    s.style.transform = `translateX(${(i - n) * 100}%)`;
+  });
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    d.className = 'dot' + (i === n ? ' active' : '');
+  });
+  counterEl.textContent = `${n + 1} / ${total}`;
+  titleEl.textContent = TITLES[n] || '';
+  document.getElementById('btn-prev').style.opacity = n === 0 ? '0.3' : '1';
+  document.getElementById('btn-next').textContent = n === total - 1 ? '✓ Fin' : 'Siguiente →';
+  cur = n;
+}
+
+function next() { if (cur < total - 1) goTo(cur + 1); }
+function prev() { if (cur > 0) goTo(cur - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+});
+
+goTo(0);
+</script>
+</body>
+</html>

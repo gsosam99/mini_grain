@@ -14,16 +14,18 @@ export default async function DashboardPage() {
       .select('id, nombre, banco, credito_aprobado, estado')
       .order('nombre'),
     supabase.from('lotes').select('id, productor_id, hectareas'),
-    supabase.from('plan_productos').select(`
-      id, dosis_ha, lotes_ids,
-      variante:variantes_producto(id, presentacion, precio, unidad,
-        producto:productos(id, nombre, categoria)
+    supabase.from('planes').select(`
+      productor_id,
+      plan_productos(
+        id, dosis_ha, lotes_ids,
+        variante:variantes_producto(id, presentacion, precio, unidad)
       )
     `),
   ]);
 
   type PlanProductoRow = {
     id: string; dosis_ha: number; lotes_ids: string[] | null;
+    plan: { productor_id: string } | null;
     variante: { id: string; presentacion: number; precio: number } | null;
   };
 
@@ -31,7 +33,16 @@ export default async function DashboardPage() {
     id: string; nombre: string; banco: string | null; credito_aprobado: number; estado: string | null;
   }[];
   const lotes = (lotesRes.data ?? []) as { id: string; productor_id: string; hectareas: number }[];
-  const planProductos = (planesRes.data ?? []) as unknown as PlanProductoRow[];
+
+  // Flatten planes → plan_productos and attach productor_id to each item
+  const planesData = (planesRes.data ?? []) as unknown as {
+    productor_id: string;
+    plan_productos: { id: string; dosis_ha: number; lotes_ids: string[] | null;
+      variante: { id: string; presentacion: number; precio: number } | null }[];
+  }[];
+  const planProductos: PlanProductoRow[] = planesData.flatMap((plan) =>
+    plan.plan_productos.map((pp) => ({ ...pp, plan: { productor_id: plan.productor_id } }))
+  );
 
   return (
     <div>
