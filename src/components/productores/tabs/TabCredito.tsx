@@ -1,6 +1,6 @@
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
-import { calcularRedondeo, calcularResumenCredito } from '@/lib/rounding';
+import { calcularRedondeoAgregado, calcularResumenCredito } from '@/lib/rounding';
 
 interface Lote {
   id: string;
@@ -12,6 +12,7 @@ interface PlanProducto {
   id: string;
   dosis_ha: number;
   lotes_ids: string[] | null;
+  precio_override: number | null;
   variante: { id: string; unidad: string; presentacion: number; precio: number;
     producto: { id: string; nombre: string; categoria: string } | null;
   } | null;
@@ -29,21 +30,30 @@ export default function TabCredito({ creditoAprobado, banco, plan, lotes }: Prop
 
   const categorias: Record<string, { items: { nombre: string; costo: number }[]; total: number }> = {};
 
+  // Agrupar por variante para aplicar un solo ceil por variante
+  const varMap = new Map<string, PlanProducto[]>();
   for (const pp of planProductos) {
     if (!pp.variante) continue;
-    const cat = pp.variante.producto?.categoria ?? 'Otros';
-    const aplicables = pp.lotes_ids
-      ? lotes.filter((l) => pp.lotes_ids!.includes(l.id))
-      : lotes;
-    const ha = aplicables.reduce((s, l) => s + l.hectareas, 0);
-    const { costoTotal } = calcularRedondeo({
-      dosisHa: pp.dosis_ha,
-      hectareas: ha,
-      presentacion: pp.variante.presentacion,
-      precio: pp.variante.precio,
+    const vid = pp.variante.id;
+    if (!varMap.has(vid)) varMap.set(vid, []);
+    varMap.get(vid)!.push(pp);
+  }
+
+  for (const [, varPps] of varMap) {
+    const v = varPps[0].variante!;
+    const cat = v.producto?.categoria ?? 'Otros';
+    const { costoTotal } = calcularRedondeoAgregado({
+      aplicaciones: varPps.map((pp) => {
+        const aplicables = pp.lotes_ids
+          ? lotes.filter((l) => pp.lotes_ids!.includes(l.id))
+          : lotes;
+        return { dosisHa: pp.dosis_ha, hectareas: aplicables.reduce((s, l) => s + l.hectareas, 0), precioOverride: pp.precio_override };
+      }),
+      presentacion: v.presentacion,
+      precio: v.precio,
     });
     if (!categorias[cat]) categorias[cat] = { items: [], total: 0 };
-    categorias[cat].items.push({ nombre: pp.variante.producto?.nombre ?? 'Producto', costo: costoTotal });
+    categorias[cat].items.push({ nombre: v.producto?.nombre ?? 'Producto', costo: costoTotal });
     categorias[cat].total += costoTotal;
   }
 

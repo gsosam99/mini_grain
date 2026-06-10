@@ -126,7 +126,7 @@ export default function AgregarProductoPlanModal({
         .select(`
           id, ciclo,
           plan_productos(
-            id, dosis_ha, lotes_ids, created_at,
+            id, dosis_ha, lotes_ids, precio_override, created_at,
             variante:variantes_producto(
               id, unidad, presentacion, precio,
               producto:productos(id, nombre, categoria, subcategoria,

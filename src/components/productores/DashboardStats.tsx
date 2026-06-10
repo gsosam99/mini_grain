@@ -1,6 +1,6 @@
 import Card from '@/components/ui/Card';
 import { Users, MapPin, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { calcularRedondeo } from '@/lib/rounding';
+import { calcularRedondeoAgregado } from '@/lib/rounding';
 
 interface DashboardStatsProps {
   productores: { id: string; credito_aprobado: number }[];
@@ -9,6 +9,7 @@ interface DashboardStatsProps {
     id: string;
     dosis_ha: number;
     lotes_ids: string[] | null;
+    precio_override: number | null;
     plan: { productor_id: string } | null;
     variante: { id: string; presentacion: number; precio: number } | null;
   }[];
@@ -20,20 +21,31 @@ function calcularCostoPorProductor(
   planProductos: DashboardStatsProps['planProductos']
 ): number {
   const productorLotes = lotes.filter((l) => l.productor_id === productorId);
-  return planProductos.reduce((sum, pp) => {
-    if (!pp.variante || pp.plan?.productor_id !== productorId) return sum;
-    const lotesAplicables = pp.lotes_ids
-      ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
-      : productorLotes;
-    const ha = lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
-    if (ha === 0) return sum;
-    const { costoTotal } = calcularRedondeo({
-      dosisHa: pp.dosis_ha,
-      hectareas: ha,
-      presentacion: pp.variante.presentacion,
-      precio: pp.variante.precio,
+
+  // Agrupar por variante para aplicar UN SOLO ceil por variante (igual que el Excel maestro)
+  const varMap = new Map<string, DashboardStatsProps['planProductos']>();
+  for (const pp of planProductos) {
+    if (!pp.variante || pp.plan?.productor_id !== productorId) continue;
+    const vid = pp.variante.id;
+    if (!varMap.has(vid)) varMap.set(vid, []);
+    varMap.get(vid)!.push(pp);
+  }
+
+  return [...varMap.values()].reduce((total, varPps) => {
+    const v = varPps[0].variante!;
+    const aplicaciones = varPps.map((pp) => {
+      const lotesAplicables = pp.lotes_ids
+        ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
+        : productorLotes;
+      const hectareas = lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
+      return { dosisHa: pp.dosis_ha, hectareas, precioOverride: pp.precio_override };
     });
-    return sum + costoTotal;
+    const { costoTotal } = calcularRedondeoAgregado({
+      aplicaciones,
+      presentacion: v.presentacion,
+      precio: v.precio,
+    });
+    return total + costoTotal;
   }, 0);
 }
 

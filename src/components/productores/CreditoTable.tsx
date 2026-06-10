@@ -6,7 +6,7 @@ import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import SortableHeader from '@/components/ui/SortableHeader';
 import { useSortable, applySortable } from '@/hooks/useSortable';
-import { calcularRedondeo, calcularResumenCredito } from '@/lib/rounding';
+import { calcularRedondeoAgregado, calcularResumenCredito } from '@/lib/rounding';
 
 interface Props {
   productores: {
@@ -21,6 +21,7 @@ interface Props {
     id: string;
     dosis_ha: number;
     lotes_ids: string[] | null;
+    precio_override: number | null;
     plan: { productor_id: string } | null;
     variante: { id: string; presentacion: number; precio: number } | null;
   }[];
@@ -32,20 +33,29 @@ function calcularCostoProductor(
   planProductos: Props['planProductos']
 ): number {
   const productorLotes = lotes.filter((l) => l.productor_id === productorId);
-  return planProductos.reduce((sum, pp) => {
-    if (!pp.variante || pp.plan?.productor_id !== productorId) return sum;
-    const lotesAplicables = pp.lotes_ids
-      ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
-      : productorLotes;
-    const ha = lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
-    if (ha === 0) return sum;
-    const { costoTotal } = calcularRedondeo({
-      dosisHa: pp.dosis_ha,
-      hectareas: ha,
-      presentacion: pp.variante.presentacion,
-      precio: pp.variante.precio,
+
+  // Agrupar por variante para aplicar UN SOLO ceil por variante
+  const varMap = new Map<string, Props['planProductos']>();
+  for (const pp of planProductos) {
+    if (!pp.variante || pp.plan?.productor_id !== productorId) continue;
+    const vid = pp.variante.id;
+    if (!varMap.has(vid)) varMap.set(vid, []);
+    varMap.get(vid)!.push(pp);
+  }
+
+  return [...varMap.values()].reduce((total, varPps) => {
+    const v = varPps[0].variante!;
+    const { costoTotal } = calcularRedondeoAgregado({
+      aplicaciones: varPps.map((pp) => {
+        const lotesAplicables = pp.lotes_ids
+          ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
+          : productorLotes;
+        return { dosisHa: pp.dosis_ha, hectareas: lotesAplicables.reduce((s, l) => s + l.hectareas, 0), precioOverride: pp.precio_override };
+      }),
+      presentacion: v.presentacion,
+      precio: v.precio,
     });
-    return sum + costoTotal;
+    return total + costoTotal;
   }, 0);
 }
 

@@ -1,5 +1,5 @@
 import type { Productor, Lote, Plan, PlanProducto } from '@/types';
-import { calcularRedondeo } from './rounding';
+import { calcularRedondeoAgregado } from './rounding';
 
 export async function exportarPlanExcel(params: {
   productores: Productor[];
@@ -17,33 +17,48 @@ export async function exportarPlanExcel(params: {
     const plan = planes.find((p) => p.productor_id === productor.id);
     if (!plan?.plan_productos) continue;
 
+    // Agrupar por variante para aplicar UN SOLO ceil por variante
+    const varMap = new Map<string, PlanProducto[]>();
     for (const pp of plan.plan_productos as PlanProducto[]) {
       if (!pp.variante?.producto) continue;
-      const aplicables = pp.lotes_ids
-        ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
-        : productorLotes;
-      const ha = aplicables.reduce((s, l) => s + l.hectareas, 0);
-      const { totalSinRedondear, unidadesNecesarias, costoTotal } = calcularRedondeo({
-        dosisHa: pp.dosis_ha,
-        hectareas: ha,
-        presentacion: pp.variante.presentacion,
-        precio: pp.variante.precio,
+      const vid = pp.variante.id;
+      if (!varMap.has(vid)) varMap.set(vid, []);
+      varMap.get(vid)!.push(pp);
+    }
+
+    for (const [, varPps] of varMap) {
+      const pp0 = varPps[0];
+      if (!pp0.variante?.producto) continue;
+
+      const aplicacionesAgg = varPps.map((pp) => {
+        const aplicables = pp.lotes_ids
+          ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
+          : productorLotes;
+        const hectareas = aplicables.reduce((s, l) => s + l.hectareas, 0);
+        return { dosisHa: pp.dosis_ha, hectareas, precioOverride: pp.precio_override };
       });
+
+      const { totalSinRedondear, unidadesNecesarias, costoTotal } = calcularRedondeoAgregado({
+        aplicaciones: aplicacionesAgg,
+        presentacion: pp0.variante.presentacion,
+        precio: pp0.variante.precio,
+      });
+
+      const haTotal = aplicacionesAgg.reduce((s, a) => s + a.hectareas, 0);
 
       costoRows.push({
         Productor: productor.nombre,
         Estado: productor.estado ?? '',
         Banco: productor.banco ?? '',
-        Categoría: pp.variante.producto.categoria,
-        Subcategoría: pp.variante.producto.subcategoria ?? '',
-        Proveedor: (pp.variante.producto as { proveedor?: { nombre: string } }).proveedor?.nombre ?? '',
-        Producto: pp.variante.producto.nombre,
-        'Precio Unitario': pp.variante.precio,
-        'Dosis/Ha': pp.dosis_ha,
-        'Ha Aplicables': ha,
+        Categoría: pp0.variante.producto.categoria,
+        Subcategoría: pp0.variante.producto.subcategoria ?? '',
+        Proveedor: (pp0.variante.producto as { proveedor?: { nombre: string } }).proveedor?.nombre ?? '',
+        Producto: pp0.variante.producto.nombre,
+        'Precio Unitario': pp0.variante.precio,
+        'Ha Aplicables': haTotal,
         'Total sin redondear': totalSinRedondear,
-        Presentación: pp.variante.presentacion,
-        Unidad: pp.variante.unidad,
+        Presentación: pp0.variante.presentacion,
+        Unidad: pp0.variante.unidad,
         'Redondeo Final': unidadesNecesarias,
         'Costo Total': costoTotal,
       });

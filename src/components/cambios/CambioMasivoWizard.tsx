@@ -261,7 +261,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
       const { data } = await supabase
         .from('plan_productos')
         .select(`
-          id, dosis_ha, lotes_ids,
+          id, dosis_ha, lotes_ids, precio_override,
           plan:planes!inner(
             productor_id,
             productor:productores!inner(id, nombre)

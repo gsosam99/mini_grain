@@ -13,6 +13,43 @@ export function calcularRedondeo(params: {
   return { totalSinRedondear, unidadesNecesarias, costoTotal };
 }
 
+/**
+ * Versión agregada: suma todos los (dosisHa × ha) y aplica el ceil UNA SOLA VEZ
+ * sobre el total acumulado, igual al comportamiento del Excel maestro.
+ * Usar siempre que se consoliden múltiples plan_productos del mismo variante.
+ *
+ * Cuando una aplicación tiene `precioOverride`, se agrupa por precio y se aplica
+ * un ceil independiente por grupo — permite precios por lote en mecanización.
+ */
+export function calcularRedondeoAgregado(params: {
+  aplicaciones: { dosisHa: number; hectareas: number; precioOverride?: number | null }[];
+  presentacion: number;
+  precio: number;
+}): ResultadoRedondeo {
+  // Separar aplicaciones con precio_override de las que usan el precio base
+  const grupos = new Map<number, number>(); // precio → totalSinRedondear acumulado
+
+  for (const a of params.aplicaciones) {
+    const precioEfectivo = a.precioOverride ?? params.precio;
+    const prev = grupos.get(precioEfectivo) ?? 0;
+    grupos.set(precioEfectivo, prev + a.dosisHa * a.hectareas);
+  }
+
+  let totalSinRedondear = 0;
+  let costoTotal = 0;
+  let unidadesNecesarias = 0;
+
+  for (const [precioGrupo, totalGrupo] of grupos) {
+    const unidades =
+      params.presentacion > 0 ? Math.ceil(totalGrupo / params.presentacion) : 0;
+    totalSinRedondear += totalGrupo;
+    unidadesNecesarias += unidades;
+    costoTotal += unidades * precioGrupo;
+  }
+
+  return { totalSinRedondear, unidadesNecesarias, costoTotal };
+}
+
 export function calcularResumenCredito(params: {
   creditoAprobado: number;
   costoTotalPlan: number;

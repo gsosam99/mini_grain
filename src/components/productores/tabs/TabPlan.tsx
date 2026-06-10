@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import { Plus, Pencil, History, ChevronDown, ChevronRight } from 'lucide-react';
 import SortableHeader from '@/components/ui/SortableHeader';
 import { useSortable, applySortable } from '@/hooks/useSortable';
-import { calcularRedondeo } from '@/lib/rounding';
+import { calcularRedondeo, calcularRedondeoAgregado } from '@/lib/rounding';
 import EditarPlanProductoModal from '@/components/planes/EditarPlanProductoModal';
 import AgregarProductoPlanModal from '@/components/planes/AgregarProductoPlanModal';
 import CrearPlanModal from '@/components/planes/CrearPlanModal';
@@ -119,7 +119,7 @@ interface AggRow {
 // ─── aggregate builder ───────────────────────────────────────────────────────
 
 function buildAggRows(items: PlanProducto[], lotes: Lote[]): AggRow[] {
-  // Group plan_productos by product ID
+  // Paso 1 — agrupar por producto
   const map = new Map<string, PlanProducto[]>();
   for (const pp of items) {
     const key = pp.variante?.producto?.id ?? pp.id;
@@ -134,6 +134,14 @@ function buildAggRows(items: PlanProducto[], lotes: Lote[]): AggRow[] {
     const subcategoria = first.variante?.producto?.subcategoria ?? null;
     const proveedor = first.variante?.producto?.proveedor?.nombre ?? null;
 
+    // Paso 2 — sub-agrupar por variante para aplicar UN SOLO ceil por variante
+    const varMap = new Map<string, PlanProducto[]>();
+    for (const pp of pps) {
+      const vid = pp.variante?.id ?? pp.id;
+      if (!varMap.has(vid)) varMap.set(vid, []);
+      varMap.get(vid)!.push(pp);
+    }
+
     let totalHa = 0;
     let totalUnidades = 0;
     let totalCantidadFisica = 0;
@@ -141,34 +149,48 @@ function buildAggRows(items: PlanProducto[], lotes: Lote[]): AggRow[] {
     const unidadesVistas = new Set<string>();
     const aplicaciones: AplicacionDetalle[] = [];
 
-    for (const pp of pps) {
-      if (!pp.variante) continue;
-      const ha = getHectareasAplicables(pp, lotes);
-      const { unidadesNecesarias, costoTotal } = calcularRedondeo({
-        dosisHa: pp.dosis_ha,
-        hectareas: ha,
-        presentacion: pp.variante.presentacion,
-        precio: pp.variante.precio,
+    for (const [, varPps] of varMap) {
+      const v = varPps.find((p) => p.variante)?.variante;
+      if (!v) continue;
+
+      // Acumular raw (dosis × ha) por plan_producto y calcular el ceil del total acumulado
+      const ppRaws = varPps.map((pp) => {
+        const ha = getHectareasAplicables(pp, lotes);
+        return { pp, ha, raw: pp.dosis_ha * ha };
       });
-      const cantidadFisica = unidadesNecesarias * pp.variante.presentacion;
-      totalHa += ha;
+
+      const rawTotal = ppRaws.reduce((s, d) => s + d.raw, 0);
+      const { unidadesNecesarias, costoTotal } = calcularRedondeoAgregado({
+        aplicaciones: ppRaws.map((d) => ({ dosisHa: d.pp.dosis_ha, hectareas: d.ha, precioOverride: d.pp.precio_override })),
+        presentacion: v.presentacion,
+        precio: v.precio,
+      });
+      const cantidadFisicaVariante = unidadesNecesarias * v.presentacion;
+
       totalUnidades += unidadesNecesarias;
-      totalCantidadFisica += cantidadFisica;
+      totalCantidadFisica += cantidadFisicaVariante;
       totalCosto += costoTotal;
-      unidadesVistas.add(pp.variante.unidad);
-      aplicaciones.push({
-        pp,
-        loteLabel: getLoteLabel(pp, lotes),
-        ha,
-        dosis: pp.dosis_ha,
-        varianteLabel: `${pp.variante.presentacion} ${pp.variante.unidad}`,
-        precioUnitario: pp.variante.precio,
-        unidades: unidadesNecesarias,
-        cantidadFisica,
-        unidad: pp.variante.unidad,
-        costo: costoTotal,
-        tieneCambios: pp.plan_cambios.length > 0,
-      });
+      unidadesVistas.add(v.unidad);
+
+      // Filas de detalle: demanda física real del lote (sin redondear por lote)
+      // El costo se distribuye proporcionalmente para que la suma coincida con el total
+      for (const { pp, ha, raw } of ppRaws) {
+        totalHa += ha;
+        const frac = rawTotal > 0 ? raw / rawTotal : 0;
+        aplicaciones.push({
+          pp,
+          loteLabel: getLoteLabel(pp, lotes),
+          ha,
+          dosis: pp.dosis_ha,
+          varianteLabel: `${v.presentacion} ${v.unidad}`,
+          precioUnitario: v.precio,
+          unidades: frac * unidadesNecesarias,
+          cantidadFisica: raw,           // demanda real del lote, sin redondeo
+          unidad: v.unidad,
+          costo: frac * costoTotal,      // proporcional al costo total redondeado
+          tieneCambios: pp.plan_cambios.length > 0,
+        });
+      }
     }
 
     const unidadComun = unidadesVistas.size === 1 ? [...unidadesVistas][0] : null;
@@ -222,17 +244,8 @@ export default function TabPlan({ plan, lotes, productorId }: Props) {
   );
 
   const totalCosto = useMemo(() => {
-    return (planLocal?.plan_productos ?? []).reduce((sum, pp) => {
-      if (!pp.variante) return sum;
-      const ha = getHectareasAplicables(pp, lotes);
-      const { costoTotal } = calcularRedondeo({
-        dosisHa: pp.dosis_ha,
-        hectareas: ha,
-        presentacion: pp.variante.presentacion,
-        precio: pp.variante.precio,
-      });
-      return sum + costoTotal;
-    }, 0);
+    return buildAggRows(planLocal?.plan_productos ?? [], lotes)
+      .reduce((sum, row) => sum + row.totalCosto, 0);
   }, [planLocal, lotes]);
 
   if (!planLocal) {
@@ -275,22 +288,11 @@ export default function TabPlan({ plan, lotes, productorId }: Props) {
 
       {/* Category accordions */}
       {Object.entries(grupos).map(([categoria, items]) => {
-        const subtotal = items.reduce((sum, pp) => {
-          if (!pp.variante) return sum;
-          const ha = getHectareasAplicables(pp, lotes);
-          const { costoTotal } = calcularRedondeo({
-            dosisHa: pp.dosis_ha,
-            hectareas: ha,
-            presentacion: pp.variante.presentacion,
-            precio: pp.variante.precio,
-          });
-          return sum + costoTotal;
-        }, 0);
-
         const isCerrada = cerradas.has(categoria);
 
         // Build aggregate rows (1 per unique product) and sort them
         const aggRows = buildAggRows(items, lotes);
+        const subtotal = aggRows.reduce((sum, row) => sum + row.totalCosto, 0);
         const aggRowsSorted = applySortable(aggRows, planSort, (row, key) => (
           ({
             producto: row.nombre,

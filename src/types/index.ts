@@ -100,6 +100,7 @@ export interface PlanProducto {
   variante_id: string;
   dosis_ha: number;
   lotes_ids: string[] | null;
+  precio_override: number | null;
   created_at: string;
   variante?: VarianteProducto & { producto?: Producto };
   plan_cambios?: PlanCambio[];

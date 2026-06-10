@@ -17,14 +17,14 @@ export default async function DashboardPage() {
     supabase.from('planes').select(`
       productor_id,
       plan_productos(
-        id, dosis_ha, lotes_ids,
+        id, dosis_ha, lotes_ids, precio_override,
         variante:variantes_producto(id, presentacion, precio, unidad)
       )
     `),
   ]);
 
   type PlanProductoRow = {
-    id: string; dosis_ha: number; lotes_ids: string[] | null;
+    id: string; dosis_ha: number; lotes_ids: string[] | null; precio_override: number | null;
     plan: { productor_id: string } | null;
     variante: { id: string; presentacion: number; precio: number } | null;
   };
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
   // Flatten planes → plan_productos and attach productor_id to each item
   const planesData = (planesRes.data ?? []) as unknown as {
     productor_id: string;
-    plan_productos: { id: string; dosis_ha: number; lotes_ids: string[] | null;
+    plan_productos: { id: string; dosis_ha: number; lotes_ids: string[] | null; precio_override: number | null;
       variante: { id: string; presentacion: number; precio: number } | null }[];
   }[];
   const planProductos: PlanProductoRow[] = planesData.flatMap((plan) =>
