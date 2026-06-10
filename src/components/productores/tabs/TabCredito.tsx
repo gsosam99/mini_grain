@@ -13,8 +13,8 @@ interface PlanProducto {
   dosis_ha: number;
   lotes_ids: string[] | null;
   precio_override: number | null;
-  variante: { id: string; unidad: string; presentacion: number; precio: number;
-    producto: { id: string; nombre: string; categoria: string } | null;
+  variante?: { id: string; unidad: string; presentacion: number; precio: number;
+    producto?: { id: string; nombre: string; categoria: string } | null;
   } | null;
 }
 

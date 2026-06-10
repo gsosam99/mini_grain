@@ -30,6 +30,7 @@ interface PlanProducto {
   dosis_ha: number;
   lotes_ids: string[] | null;
   created_at: string;
+  precio_override?: number | null;
   variante: VarianteConProducto | null;
   plan_cambios: {
     id: string; tipo: string; dosis_original: number | null; dosis_nueva: number | null;
