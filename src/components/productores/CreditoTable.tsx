@@ -1,12 +1,27 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { Search } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import SortableHeader from '@/components/ui/SortableHeader';
 import { useSortable, applySortable } from '@/hooks/useSortable';
 import { calcularRedondeoAgregado, calcularResumenCredito } from '@/lib/rounding';
+
+type EstadoCredito = 'ok' | 'advertencia' | 'excedido';
+type FiltroEstado = 'todos' | EstadoCredito;
+
+const FILTROS: { id: FiltroEstado; label: string }[] = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'ok', label: 'OK' },
+  { id: 'advertencia', label: 'Atención' },
+  { id: 'excedido', label: 'Excedidos' },
+];
+
+function normalizar(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
 
 interface Props {
   productores: {
@@ -63,14 +78,32 @@ type SortKey = 'nombre' | 'estado' | 'banco' | 'credito' | 'costo' | 'delta';
 
 export default function CreditoTable({ productores, lotes, planProductos }: Props) {
   const { sort, toggle } = useSortable<SortKey>('nombre');
+  const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState<FiltroEstado>('todos');
 
-  const rows = useMemo(() => {
-    const base = productores.map((p) => {
+  const todos = useMemo(() => {
+    return productores.map((p) => {
       const costo = calcularCostoProductor(p.id, lotes, planProductos);
       const resumen = calcularResumenCredito({ creditoAprobado: p.credito_aprobado, costoTotalPlan: costo });
       return { ...p, costo, resumen };
     });
-    return applySortable(base, sort, (row, key) => ({
+  }, [productores, lotes, planProductos]);
+
+  // Conteos por estado (para los chips de filtro)
+  const conteos = useMemo(() => {
+    const c = { todos: todos.length, ok: 0, advertencia: 0, excedido: 0 };
+    for (const r of todos) c[r.resumen.estado]++;
+    return c;
+  }, [todos]);
+
+  const rows = useMemo(() => {
+    const q = normalizar(busqueda.trim());
+    const filtradas = todos.filter((r) => {
+      if (filtro !== 'todos' && r.resumen.estado !== filtro) return false;
+      if (q && !normalizar(r.nombre).includes(q)) return false;
+      return true;
+    });
+    return applySortable(filtradas, sort, (row, key) => ({
       nombre: row.nombre,
       estado: row.estado ?? '',
       banco: row.banco ?? '',
@@ -78,9 +111,39 @@ export default function CreditoTable({ productores, lotes, planProductos }: Prop
       costo: row.costo,
       delta: row.resumen.delta,
     }[key]));
-  }, [productores, lotes, planProductos, sort]);
+  }, [todos, busqueda, filtro, sort]);
 
   return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xs">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar productor..."
+            className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FILTROS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFiltro(f.id)}
+              className={[
+                'rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors',
+                filtro === f.id
+                  ? 'border-green-600 bg-green-50 text-green-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+              ].join(' ')}
+            >
+              {f.label} <span className="text-slate-400">({conteos[f.id]})</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
     <Card>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -96,6 +159,13 @@ export default function CreditoTable({ productores, lotes, planProductos }: Prop
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
+                  No hay productores que coincidan con la búsqueda o filtro.
+                </td>
+              </tr>
+            )}
             {rows.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-4 py-3">
@@ -126,6 +196,7 @@ export default function CreditoTable({ productores, lotes, planProductos }: Prop
         </table>
       </div>
     </Card>
+    </div>
   );
 }
 

@@ -8,7 +8,7 @@ import TabPlan from './tabs/TabPlan';
 import TabCredito from './tabs/TabCredito';
 import TabCambios from './tabs/TabCambios';
 
-type Tab = 'info' | 'lotes' | 'plan' | 'credito' | 'cambios';
+type Tab = 'plan' | 'credito' | 'cambios' | 'detalles';
 
 interface Props {
   productor: {
@@ -55,17 +55,16 @@ interface Props {
 }
 
 const tabs: { id: Tab; label: string }[] = [
-  { id: 'info', label: 'Información' },
-  { id: 'lotes', label: 'Lotes' },
-  { id: 'plan', label: 'Plan Agrícola' },
+  { id: 'plan', label: 'Plan Agronómico' },
   { id: 'credito', label: 'Crédito' },
   { id: 'cambios', label: 'Cambios Logísticos' },
+  { id: 'detalles', label: 'Detalles' },
 ];
 
 export type ProductorTabsProps = Props;
 
 export default function ProductorTabs({ productor, lotes, plan, historialCal, productorId }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('info');
+  const [activeTab, setActiveTab] = useState<Tab>('plan');
 
   return (
     <div>
@@ -88,10 +87,6 @@ export default function ProductorTabs({ productor, lotes, plan, historialCal, pr
         </nav>
       </div>
 
-      {activeTab === 'info' && <TabInfo productor={productor} />}
-      {activeTab === 'lotes' && (
-        <TabLotes lotes={lotes} productorId={productorId} historialCal={historialCal} />
-      )}
       {activeTab === 'plan' && (
         <TabPlan plan={plan} lotes={lotes} productorId={productorId} />
       )}
@@ -104,6 +99,12 @@ export default function ProductorTabs({ productor, lotes, plan, historialCal, pr
         />
       )}
       {activeTab === 'cambios' && <TabCambios plan={plan} />}
+      {activeTab === 'detalles' && (
+        <div className="space-y-6">
+          <TabInfo productor={productor} />
+          <TabLotes lotes={lotes} productorId={productorId} historialCal={historialCal} />
+        </div>
+      )}
     </div>
   );
 }

@@ -382,7 +382,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
             PASO 1 — Definir el cambio
         ══════════════════════════════════════════════════════════════ */}
         {paso === 1 && (
-          <div className="space-y-6 max-w-2xl">
+          <div className="space-y-6 w-full">
             <div>
               <p className="text-sm font-semibold text-slate-700 mb-3">Tipo de cambio</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -594,7 +594,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
             PASO 2 — Alcance
         ══════════════════════════════════════════════════════════════ */}
         {paso === 2 && (
-          <div className="space-y-5 max-w-2xl">
+          <div className="space-y-5 w-full">
             {loadingAfectadas ? (
               <div className="py-12 text-center text-slate-400 text-sm">
                 Buscando planes afectados…
