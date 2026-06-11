@@ -21,11 +21,12 @@ interface PlanProducto {
 interface Props {
   creditoAprobado: number;
   banco: string | null;
+  creditos: { id: string; banco: string; monto_aprobado: number }[];
   plan: { id: string; plan_productos: PlanProducto[] } | null;
   lotes: Lote[];
 }
 
-export default function TabCredito({ creditoAprobado, banco, plan, lotes }: Props) {
+export default function TabCredito({ creditoAprobado, banco, creditos, plan, lotes }: Props) {
   const planProductos = plan?.plan_productos ?? [];
 
   const categorias: Record<string, { items: { nombre: string; costo: number }[]; total: number }> = {};
@@ -79,10 +80,24 @@ export default function TabCredito({ creditoAprobado, banco, plan, lotes }: Prop
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardBody>
-            <p className="text-xs text-slate-500 mb-1">Crédito aprobado{banco ? ` (${banco})` : ''}</p>
+            <p className="text-xs text-slate-500 mb-1">
+              Crédito aprobado{creditos.length <= 1 && banco ? ` (${banco})` : ''}
+            </p>
             <p className="text-2xl font-bold text-slate-900">
               ${creditoAprobado.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
             </p>
+            {creditos.length > 1 && (
+              <div className="mt-2 space-y-1 border-t border-slate-100 pt-2">
+                {creditos.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500">{c.banco}</span>
+                    <span className="font-mono text-slate-700">
+                      ${c.monto_aprobado.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardBody>
         </Card>
         <Card>

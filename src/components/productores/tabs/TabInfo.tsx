@@ -14,8 +14,9 @@ interface Props {
     credito_aprobado: number;
     estado: string | null;
     localidad: string | null;
+    region: string | null;
     tecnico: Tecnico | null;
-    coordinador: Tecnico | null;
+    coordinadores: { tecnico: Tecnico | null }[];
     gerente: Tecnico | null;
   };
 }
@@ -40,6 +41,27 @@ function TecnicoField({ label, tecnico }: { label: string; tecnico: Tecnico | nu
   );
 }
 
+function CoordinadoresField({ coordinadores }: { coordinadores: { tecnico: Tecnico | null }[] }) {
+  const lista = coordinadores.map((c) => c.tecnico).filter((t): t is Tecnico => t !== null);
+  const label = lista.length > 1 ? 'Coordinadores' : 'Coordinador';
+  if (lista.length === 0) {
+    return <Field label="Coordinador" value={<span className="text-slate-400">Por definir</span>} />;
+  }
+  return (
+    <div>
+      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
+      <div className="space-y-1.5">
+        {lista.map((t) => (
+          <div key={t.id}>
+            <p className="text-sm text-slate-900">{t.nombre}</p>
+            {t.contacto && <p className="text-xs text-slate-500">{t.contacto}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TabInfo({ productor }: Props) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -51,7 +73,7 @@ export default function TabInfo({ productor }: Props) {
           <Field label="Nombre completo" value={productor.nombre} />
           <div className="grid grid-cols-2 gap-4">
             <Field label="Estado" value={productor.estado} />
-            <Field label="Localidad" value={productor.localidad} />
+            <Field label="Región" value={productor.region} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field
@@ -76,7 +98,7 @@ export default function TabInfo({ productor }: Props) {
         </CardHeader>
         <CardBody className="space-y-4">
           <TecnicoField label="Técnico asignado" tecnico={productor.tecnico} />
-          <TecnicoField label="Coordinador" tecnico={productor.coordinador} />
+          <CoordinadoresField coordinadores={productor.coordinadores} />
           <TecnicoField label="Gerente" tecnico={productor.gerente} />
         </CardBody>
       </Card>

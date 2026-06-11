@@ -48,13 +48,35 @@ create table if not exists productores (
   nombre text not null,
   banco text,
   credito_aprobado numeric default 0,
-  estado text,
+  estado text,             -- Estado de Venezuela (Guárico, Portuguesa, …)
   localidad text,
+  region text,             -- Región/zona dentro del estado (detalle de la finca)
   tecnico_id uuid references tecnicos(id) on delete set null,
-  coordinador_id uuid references tecnicos(id) on delete set null,
+  coordinador_id uuid references tecnicos(id) on delete set null,  -- (legado) ver productor_coordinadores
   gerente_id uuid references tecnicos(id) on delete set null,
+  -- credito_aprobado y banco se mantienen como TOTAL/resumen denormalizado;
+  -- el detalle por banco vive en la tabla creditos.
   created_at timestamptz default now(),
   unique (nombre)
+);
+
+-- Créditos por productor — un productor puede tener N créditos (uno por banco).
+-- productores.credito_aprobado = SUM(creditos.monto_aprobado) (denormalizado).
+create table if not exists creditos (
+  id uuid primary key default gen_random_uuid(),
+  productor_id uuid not null references productores(id) on delete cascade,
+  banco text not null,
+  monto_aprobado numeric not null default 0,
+  created_at timestamptz default now(),
+  unique (productor_id, banco)
+);
+
+-- Coordinadores por productor — un productor puede tener N coordinadores
+-- (ej. Guárico y Sur de Aragua comparten dos coordinadores).
+create table if not exists productor_coordinadores (
+  productor_id uuid not null references productores(id) on delete cascade,
+  tecnico_id uuid not null references tecnicos(id) on delete cascade,
+  primary key (productor_id, tecnico_id)
 );
 
 create table if not exists lotes (
@@ -163,6 +185,8 @@ alter table productos enable row level security;
 alter table variantes_producto enable row level security;
 alter table tecnicos enable row level security;
 alter table productores enable row level security;
+alter table creditos enable row level security;
+alter table productor_coordinadores enable row level security;
 alter table lotes enable row level security;
 alter table analisis_suelos enable row level security;
 alter table planes enable row level security;
@@ -178,7 +202,7 @@ declare
 begin
   foreach t in array array[
     'proveedores','productos','variantes_producto','tecnicos',
-    'productores','lotes','analisis_suelos','planes',
+    'productores','creditos','productor_coordinadores','lotes','analisis_suelos','planes',
     'plan_productos','plan_cambios','cambios_batch','historial_cal'
   ] loop
     execute format('
@@ -193,6 +217,8 @@ end $$;
 -- ÍNDICES
 -- ============================================================
 
+create index if not exists idx_creditos_productor on creditos(productor_id);
+create index if not exists idx_productor_coordinadores_productor on productor_coordinadores(productor_id);
 create index if not exists idx_lotes_productor on lotes(productor_id);
 create index if not exists idx_plan_productos_plan on plan_productos(plan_id);
 create index if not exists idx_plan_cambios_plan_producto on plan_cambios(plan_producto_id);

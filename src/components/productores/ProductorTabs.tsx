@@ -18,8 +18,10 @@ interface Props {
     credito_aprobado: number;
     estado: string | null;
     localidad: string | null;
+    region: string | null;
+    creditos: { id: string; banco: string; monto_aprobado: number }[];
     tecnico: { id: string; nombre: string; contacto: string | null } | null;
-    coordinador: { id: string; nombre: string; contacto: string | null } | null;
+    coordinadores: { tecnico: { id: string; nombre: string; contacto: string | null } | null }[];
     gerente: { id: string; nombre: string; contacto: string | null } | null;
   };
   lotes: (Lote & {
@@ -94,6 +96,7 @@ export default function ProductorTabs({ productor, lotes, plan, historialCal, pr
         <TabCredito
           creditoAprobado={productor.credito_aprobado}
           banco={productor.banco}
+          creditos={productor.creditos}
           plan={plan}
           lotes={lotes}
         />

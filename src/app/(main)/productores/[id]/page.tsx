@@ -18,9 +18,10 @@ export default async function ProductorDetailPage({ params }: Props) {
     supabase
       .from('productores')
       .select(`
-        id, nombre, banco, credito_aprobado, estado, localidad,
+        id, nombre, banco, credito_aprobado, estado, localidad, region,
+        creditos(id, banco, monto_aprobado),
         tecnico:tecnicos!productores_tecnico_id_fkey(id, nombre, contacto),
-        coordinador:tecnicos!productores_coordinador_id_fkey(id, nombre, contacto),
+        coordinadores:productor_coordinadores(tecnico:tecnicos(id, nombre, contacto)),
         gerente:tecnicos!productores_gerente_id_fkey(id, nombre, contacto)
       `)
       .eq('id', id)
@@ -89,7 +90,7 @@ export default async function ProductorDetailPage({ params }: Props) {
         </Link>
         <PageHeader
           title={productor.nombre}
-          description={`${productor.estado ?? ''}${productor.localidad ? ' · ' + productor.localidad : ''}`}
+          description={`${productor.estado ?? ''}${productor.region ? ' · ' + productor.region : ''}`}
           actions={
             <Link href={`/productores/${id}/editar`}>
               <Button variant="secondary" size="sm">

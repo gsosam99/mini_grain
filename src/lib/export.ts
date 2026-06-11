@@ -74,53 +74,95 @@ export async function exportarPlanExcel(params: {
 export async function descargarTemplateImportacion() {
   const { utils, writeFile } = await import('xlsx');
 
-  // Hoja 1: Técnicos
+  // ── Hoja 0: Instrucciones ───────────────────────────────────────────────
+  // Documenta el CONVENIO de carga para que el costo se calcule bien.
+  // El costo de mini grain es: ceil( Σ(Dosis/Ha × Ha) / Presentación ) × Precio
+  // por lo que Precio y Presentación deben respetar estas reglas:
+  const wbInstrucciones = [
+    { Campo: 'REGLA GENERAL', Detalle: 'Precio = precio del EMPAQUE completo (no por litro/kg suelto). Presentación = tamaño del empaque, en la MISMA unidad en que se expresa la Dosis/Ha del plan.' },
+    { Campo: 'Agroquímicos (L / kg / g)', Detalle: 'Dosis/Ha en litros o kg. Presentación = tamaño del envase en esa unidad (ej. bidón 5L → 5). Precio = precio del envase completo (ej. bidón 5L de Gadriano = $82,10, NO $16,42/L).' },
+    { Campo: 'Fertilizantes y semillas (saco / bolsa)', Detalle: 'Dosis/Ha en sacos o bolsas. Presentación = 1. Precio = precio por saco/bolsa (ej. Fert Base = $35,83/saco).' },
+    { Campo: 'Servicios (análisis, fletes, asistencia)', Detalle: 'Presentación = 1, Unidad = servicio. Precio = precio por servicio/aplicación.' },
+    { Campo: 'Columna Categoría', Detalle: 'Poné la subcategoría real (ej. "Agroq. /Bio. /Mej.", "Fertilizante Básico: Fórmula", "Semillas de Maíz", "Tecnología & Asistencia Técnica"). El nivel superior (Insumos / Mecanización / Costo Financiero) lo agrupa la app automáticamente.' },
+    { Campo: 'Columna Subcategoría', Detalle: 'Opcional. Dejar vacía salvo que se necesite un sub-nivel adicional.' },
+    { Campo: 'Variantes del mismo producto', Detalle: 'Repetí el mismo Nombre en varias filas con distinta Presentación/Precio (ej. bidón 1L y bidón 20L). Se cargan como variantes del mismo producto.' },
+    { Campo: 'Productor con varios bancos', Detalle: 'Si un productor tiene crédito en más de un banco, agregá una fila por banco en la hoja Productores (mismo Nombre, distinto Banco y Crédito Aprobado).' },
+  ];
+
+  // ── Hoja 1: Técnicos ────────────────────────────────────────────────────
   const wbTecnicos = [
     { Nombre: 'Nicole Ramones', Rol: 'tecnico', Contacto: '0424-5126975' },
     { Nombre: 'Franklin Luis', Rol: 'coordinador', Contacto: '0412-3456789' },
     { Nombre: 'Hilda Alejua', Rol: 'gerente', Contacto: '0416-9876543' },
   ];
 
-  // Hoja 2: Productos — una fila por variante (presentación)
-  // El mismo producto puede aparecer varias veces con distintas presentaciones
+  // ── Hoja 2: Productos ─────────────────────────────────────────────────────
+  // Una fila por variante. Categoría = subcategoría real; Precio = por empaque.
   const wbProductos = [
-    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 1, Unidad: 'lt', Precio: 22.96 },
-    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 5, Unidad: 'lt', Precio: 110.00 },
-    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 20, Unidad: 'lt', Precio: 420.00 },
-    { Proveedor: 'Syngenta', Nombre: 'Karate Zeon', Categoría: '1. Insumos', Subcategoría: 'Agroq. /Bio. /Mej.', Presentación: 1, Unidad: 'lt', Precio: 35.00 },
-    { Proveedor: 'Fertiagro', Nombre: 'Urea granulada', Categoría: '1. Insumos', Subcategoría: 'Fertilizante Básico: Fórmula', Presentación: 50, Unidad: 'kg', Precio: 48.50 },
+    // Agroquímico con 2 presentaciones (precio POR ENVASE, presentación en litros):
+    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: 'Agroq. /Bio. /Mej.', Subcategoría: '', Presentación: 1, Unidad: 'L', Precio: 22.96 },
+    { Proveedor: 'Agrinova', Nombre: 'Dual gold', Categoría: 'Agroq. /Bio. /Mej.', Subcategoría: '', Presentación: 5, Unidad: 'L', Precio: 114.80 },
+    // Fertilizante: dosis en sacos → presentación 1, precio por saco:
+    { Proveedor: 'Agropaca', Nombre: 'Fert Base 1: MAS MAIZ 5 tn', Categoría: 'Fertilizante Básico: Fórmula', Subcategoría: '', Presentación: 1, Unidad: 'saco', Precio: 35.83 },
+    // Semilla: dosis en bolsas → presentación 1, precio por bolsa:
+    { Proveedor: 'Provencesa', Nombre: 'Maíz: Danac-029 c/fortenza duo', Categoría: 'Semillas de Maíz', Subcategoría: '', Presentación: 1, Unidad: 'saco', Precio: 177.00 },
+    // Servicio:
+    { Proveedor: 'Edafofinca', Nombre: 'Análisis de agua', Categoría: 'Tecnología & Asistencia Técnica', Subcategoría: '', Presentación: 1, Unidad: 'servicio', Precio: 3.50 },
   ];
 
-  // Hoja 3: Productores
+  // ── Hoja 3: Productores ───────────────────────────────────────────────────
+  // Un productor con dos bancos = dos filas (mismo Nombre, distinto Banco/Crédito).
   const wbProductores = [
     {
       Nombre: 'Angela Rosa Guedez Morales',
-      Banco: 'Mercantil',
-      'Crédito Aprobado': 50000,
+      Banco: 'Provincial',
+      'Crédito Aprobado': 267234.64,
       Estado: 'Portuguesa',
       Localidad: 'Turén',
       'Nombre Técnico': 'Nicole Ramones',
       'Nombre Coordinador': 'Franklin Luis',
       'Nombre Gerente': 'Hilda Alejua',
     },
+    // Ejemplo de productor con crédito en dos bancos:
+    {
+      Nombre: 'Juan Vicente Risso',
+      Banco: 'Provincial',
+      'Crédito Aprobado': 300000,
+      Estado: 'Guárico',
+      Localidad: 'Las Mercedes',
+      'Nombre Técnico': 'Jesus David Sanchez Hernandez',
+      'Nombre Coordinador': '',
+      'Nombre Gerente': 'Hilda Alejua',
+    },
+    {
+      Nombre: 'Juan Vicente Risso',
+      Banco: 'Mercantil',
+      'Crédito Aprobado': 265233.01,
+      Estado: 'Guárico',
+      Localidad: 'Las Mercedes',
+      'Nombre Técnico': 'Jesus David Sanchez Hernandez',
+      'Nombre Coordinador': '',
+      'Nombre Gerente': 'Hilda Alejua',
+    },
   ];
 
-  // Hoja 4: Lotes
+  // ── Hoja 4: Lotes ─────────────────────────────────────────────────────────
   const wbLotes = [
-    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'L01 LOTE 1A', Hectáreas: 26.53, Estado: 'Portuguesa' },
-    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'L02 LOTE 2B', Hectáreas: 14.00, Estado: 'Portuguesa' },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'LOTE 1A', Hectáreas: 26.53, Región: 'Turén' },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'LOTE 1B', Hectáreas: 33.30, Región: 'Turén' },
   ];
 
-  // Hoja 5: Plan — una fila por producto por productor
-  // Nombre Lote vacío = aplica a todos los lotes del productor
+  // ── Hoja 5: Plan ──────────────────────────────────────────────────────────
+  // Nombre Lote vacío = aplica a todos los lotes del productor.
+  // Dosis/Ha en la MISMA unidad que la presentación del producto.
   const wbPlan = [
-    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': '', 'Nombre Producto': 'Dual gold', 'Dosis/Ha': 1 },
-    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': '', 'Nombre Producto': 'Urea granulada', 'Dosis/Ha': 2.5 },
-    // Ejemplo con lote específico (cal u otro producto focalizado):
-    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'L01 LOTE 1A', 'Nombre Producto': 'Karate Zeon', 'Dosis/Ha': 0.5 },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': '', 'Nombre Producto': 'Dual gold', 'Dosis/Ha': 2 },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': '', 'Nombre Producto': 'Fert Base 1: MAS MAIZ 5 tn', 'Dosis/Ha': 8 },
+    { 'Nombre Productor': 'Angela Rosa Guedez Morales', 'Nombre Lote': 'LOTE 1A', 'Nombre Producto': 'Análisis de agua', 'Dosis/Ha': 1 },
   ];
 
   const wb = utils.book_new();
+  utils.book_append_sheet(wb, utils.json_to_sheet(wbInstrucciones), 'Instrucciones');
   utils.book_append_sheet(wb, utils.json_to_sheet(wbTecnicos), 'Técnicos');
   utils.book_append_sheet(wb, utils.json_to_sheet(wbProductos), 'Productos');
   utils.book_append_sheet(wb, utils.json_to_sheet(wbProductores), 'Productores');
