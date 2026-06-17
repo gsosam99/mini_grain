@@ -140,7 +140,7 @@ create table if not exists plan_productos (
 create table if not exists cambios_batch (
   id          uuid primary key default gen_random_uuid(),
   descripcion text not null,
-  tipo        text not null check (tipo in ('sustitucion_producto', 'cambio_variante', 'cambio_precio', 'cambio_dosis')),
+  tipo        text not null check (tipo in ('sustitucion_producto', 'cambio_variante', 'cambio_precio', 'cambio_dosis', 'agregar_producto', 'eliminar_producto')),
   afectados   int not null default 0,
   fecha       timestamptz default now()
 );
@@ -148,8 +148,8 @@ create table if not exists cambios_batch (
 -- Registro de cambios logísticos sobre un ítem del plan
 create table if not exists plan_cambios (
   id uuid primary key default gen_random_uuid(),
-  plan_producto_id uuid not null references plan_productos(id) on delete cascade,
-  tipo text not null check (tipo in ('sustitucion_producto', 'cambio_variante', 'cambio_precio', 'cambio_dosis')),
+  plan_producto_id uuid references plan_productos(id) on delete cascade,  -- nullable: en eliminar_producto se conserva el registro sin la fila
+  tipo text not null check (tipo in ('sustitucion_producto', 'cambio_variante', 'cambio_precio', 'cambio_dosis', 'agregar_producto', 'eliminar_producto')),
   variante_original_id uuid references variantes_producto(id),
   variante_nueva_id uuid references variantes_producto(id),
   dosis_original numeric,

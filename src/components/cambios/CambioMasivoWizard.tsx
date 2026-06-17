@@ -8,7 +8,7 @@ import {
   ArrowLeftRight, Users, RefreshCw,
 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { calcularRedondeo } from '@/lib/rounding';
+import { calcularRedondeo, esMecanizacion } from '@/lib/rounding';
 import { aplicarCambioMasivo, type TipoCambio } from '@/lib/actions/cambiosMasivos';
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -63,6 +63,8 @@ const TIPO_LABELS: Record<TipoCambio, string> = {
   cambio_variante: 'Cambio de presentación',
   cambio_precio: 'Actualización de precio',
   cambio_dosis: 'Cambio de dosis',
+  agregar_producto: 'Agregar producto',
+  eliminar_producto: 'Eliminar producto',
 };
 
 const TIPO_DESC: Record<TipoCambio, string> = {
@@ -70,6 +72,8 @@ const TIPO_DESC: Record<TipoCambio, string> = {
   cambio_variante: 'Cambiá la presentación (tamaño de envase) dentro del mismo producto.',
   cambio_precio: 'Actualizá el precio de una variante — afecta el costo de todos los planes que la usan.',
   cambio_dosis: 'Ajustá la dosis por hectárea en los planes seleccionados.',
+  agregar_producto: 'Sumá un producto nuevo al plan de los productores seleccionados.',
+  eliminar_producto: 'Quitá un producto del plan de los productores seleccionados.',
 };
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -134,7 +138,7 @@ function StepIndicator({ paso }: { paso: number }) {
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-export default function CambioMasivoWizard({ productos, lotes }: Props) {
+export default function CambioMasivoWizard({ productos, productores, lotes }: Props) {
   // ── paso 1 state ──
   const [paso, setPaso] = useState<1 | 2 | 3>(1);
   const [tipo, setTipo] = useState<TipoCambio>('cambio_precio');
@@ -169,6 +173,17 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
       : productoDestino?.variantes ?? [];
   const varianteDestino = variantesDestino.find((v) => v.id === varianteDestinoId);
 
+  const esAgregar = tipo === 'agregar_producto';
+  const esEliminar = tipo === 'eliminar_producto';
+  const redondearSel = !esMecanizacion(productoOrigen?.categoria);
+
+  // Hectáreas totales por productor (para el preview de "agregar")
+  const haPorProductor = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const l of lotes) m.set(l.productor_id, (m.get(l.productor_id) ?? 0) + l.hectareas);
+    return m;
+  }, [lotes]);
+
   // Producers that have affected items
   const productoresConAfectadas = useMemo(() => {
     const map = new Map<string, { id: string; nombre: string; items: number }>();
@@ -181,14 +196,53 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
     return [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }, [afectadas]);
 
-  // Items filtered by scope
+  // Lista de productores para el selector de alcance:
+  //  · agregar → TODOS los productores (no hay plan_productos previos)
+  //  · resto   → solo los que tienen la variante (afectadas)
+  const productoresParaScope = useMemo(() => {
+    if (esAgregar) {
+      return productores
+        .map((p) => ({ id: p.id, nombre: p.nombre, items: 1 }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    }
+    return productoresConAfectadas;
+  }, [esAgregar, productores, productoresConAfectadas]);
+
+  // Items filtered by scope (no aplica a "agregar")
   const afectadasEnScope = useMemo(() => {
     if (alcance === 'todos') return afectadas;
     return afectadas.filter((af) => productoresSeleccionados.has(af.productorId));
   }, [afectadas, alcance, productoresSeleccionados]);
 
+  // IDs de productores en alcance (para "agregar")
+  const productorIdsEnScope = useMemo(() => {
+    if (alcance === 'todos') return productoresParaScope.map((p) => p.id);
+    return productoresParaScope.filter((p) => productoresSeleccionados.has(p.id)).map((p) => p.id);
+  }, [alcance, productoresParaScope, productoresSeleccionados]);
+
   // Impact preview
   const impacto = useMemo((): ImpactoProductor[] => {
+    // ── Agregar: una línea nueva por productor seleccionado ──
+    if (esAgregar) {
+      const v = varianteOrigen;
+      const dosis = Number(nuevaDosis) || 0;
+      if (!v) return [];
+      return productorIdsEnScope
+        .map((id) => {
+          const ha = haPorProductor.get(id) ?? 0;
+          const { costoTotal } = calcularRedondeo({
+            dosisHa: dosis, hectareas: ha, presentacion: v.presentacion, precio: v.precio, redondear: redondearSel,
+          });
+          return {
+            productorId: id,
+            productorNombre: productores.find((p) => p.id === id)?.nombre ?? '',
+            items: 1, costoActual: 0, costoNuevo: costoTotal,
+          };
+        })
+        .sort((a, b) => a.productorNombre.localeCompare(b.productorNombre, 'es'));
+    }
+
+    // ── Resto (sustitución / presentación / precio / dosis / eliminar) ──
     const map = new Map<string, ImpactoProductor>();
     for (const af of afectadasEnScope) {
       const ha = getHa(af, lotes);
@@ -197,32 +251,31 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
         hectareas: ha,
         presentacion: af.varianteActual.presentacion,
         precio: af.varianteActual.precio,
+        redondear: redondearSel,
       });
 
-      const precioNuevo =
-        tipo === 'cambio_precio' ? Number(nuevoPrecio) || af.varianteActual.precio
-        : varianteDestino?.precio ?? af.varianteActual.precio;
-      const presentacionNueva =
-        (tipo === 'sustitucion_producto' || tipo === 'cambio_variante')
-          ? (varianteDestino?.presentacion ?? af.varianteActual.presentacion)
-          : af.varianteActual.presentacion;
-      const dosisNueva =
-        tipo === 'cambio_dosis' ? Number(nuevaDosis) || af.dosisHa : af.dosisHa;
-
-      const { costoTotal: costoNew } = calcularRedondeo({
-        dosisHa: dosisNueva,
-        hectareas: ha,
-        presentacion: presentacionNueva,
-        precio: precioNuevo,
-      });
+      let costoNew: number;
+      if (esEliminar) {
+        costoNew = 0; // se quita la línea
+      } else {
+        const precioNuevo =
+          tipo === 'cambio_precio' ? Number(nuevoPrecio) || af.varianteActual.precio
+          : varianteDestino?.precio ?? af.varianteActual.precio;
+        const presentacionNueva =
+          (tipo === 'sustitucion_producto' || tipo === 'cambio_variante')
+            ? (varianteDestino?.presentacion ?? af.varianteActual.presentacion)
+            : af.varianteActual.presentacion;
+        const dosisNueva =
+          tipo === 'cambio_dosis' ? Number(nuevaDosis) || af.dosisHa : af.dosisHa;
+        costoNew = calcularRedondeo({
+          dosisHa: dosisNueva, hectareas: ha, presentacion: presentacionNueva, precio: precioNuevo, redondear: redondearSel,
+        }).costoTotal;
+      }
 
       if (!map.has(af.productorId)) {
         map.set(af.productorId, {
-          productorId: af.productorId,
-          productorNombre: af.productorNombre,
-          items: 0,
-          costoActual: 0,
-          costoNuevo: 0,
+          productorId: af.productorId, productorNombre: af.productorNombre,
+          items: 0, costoActual: 0, costoNuevo: 0,
         });
       }
       const row = map.get(af.productorId)!;
@@ -231,11 +284,12 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
       row.costoNuevo += costoNew;
     }
     return [...map.values()].sort((a, b) => a.productorNombre.localeCompare(b.productorNombre, 'es'));
-  }, [afectadasEnScope, lotes, tipo, nuevoPrecio, nuevaDosis, varianteDestino]);
+  }, [esAgregar, esEliminar, varianteOrigen, nuevaDosis, productorIdsEnScope, haPorProductor, productores, redondearSel, afectadasEnScope, lotes, tipo, nuevoPrecio, varianteDestino]);
 
   const totalActual = impacto.reduce((s, r) => s + r.costoActual, 0);
   const totalNuevo = impacto.reduce((s, r) => s + r.costoNuevo, 0);
   const totalDelta = totalNuevo - totalActual;
+  const totalItems = impacto.reduce((s, r) => s + r.items, 0);
 
   // ── step 1 validation ──
   const paso1Valido = useMemo(() => {
@@ -244,6 +298,8 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
     if (tipo === 'cambio_variante' && !varianteDestinoId) return false;
     if (tipo === 'cambio_dosis' && !nuevaDosis) return false;
     if (tipo === 'cambio_precio' && !nuevoPrecio) return false;
+    if (tipo === 'agregar_producto' && !nuevaDosis) return false;
+    // eliminar_producto: basta con variante + descripción
     return true;
   }, [tipo, varianteOrigenId, varianteDestinoId, nuevaDosis, nuevoPrecio, descripcion]);
 
@@ -251,10 +307,17 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
   const irAPaso2 = useCallback(async () => {
     if (!varianteOrigenId) return;
     setPaso(2);
-    setLoadingAfectadas(true);
-    setAfectadas([]);
     setAlcance('todos');
     setProductoresSeleccionados(new Set());
+
+    // "Agregar" no parte de plan_productos existentes: el alcance son productores
+    if (tipo === 'agregar_producto') {
+      setAfectadas([]);
+      return;
+    }
+
+    setLoadingAfectadas(true);
+    setAfectadas([]);
 
     try {
       const supabase = createSupabaseBrowserClient();
@@ -288,7 +351,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
     } finally {
       setLoadingAfectadas(false);
     }
-  }, [varianteOrigenId, varianteOrigen, productoOrigen]);
+  }, [varianteOrigenId, varianteOrigen, productoOrigen, tipo]);
 
   const toggleProductor = useCallback((id: string) => {
     setProductoresSeleccionados((prev) => {
@@ -300,22 +363,35 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
 
   const handleAplicar = async () => {
     setAplicando(true);
-    const preciosOriginales: Record<string, number> = {};
-    for (const af of afectadasEnScope) {
-      preciosOriginales[af.id] = af.varianteActual.precio;
-    }
 
-    const result = await aplicarCambioMasivo({
-      tipo,
-      descripcion,
-      motivo,
-      varianteOrigenId,
-      varianteDestinoId: varianteDestinoId || undefined,
-      nuevaDosis: nuevaDosis ? Number(nuevaDosis) : undefined,
-      nuevoPrecio: nuevoPrecio ? Number(nuevoPrecio) : undefined,
-      planProductoIds: afectadasEnScope.map((af) => af.id),
-      preciosOriginales,
-    });
+    const result = esAgregar
+      ? await aplicarCambioMasivo({
+          tipo,
+          descripcion,
+          motivo,
+          varianteOrigenId,
+          varianteDestinoId: varianteOrigenId, // el producto/variante a agregar
+          productorIdsAgregar: productorIdsEnScope,
+          dosisAgregar: Number(nuevaDosis) || 0,
+          planProductoIds: [],
+        })
+      : await (async () => {
+          const preciosOriginales: Record<string, number> = {};
+          for (const af of afectadasEnScope) {
+            preciosOriginales[af.id] = af.varianteActual.precio;
+          }
+          return aplicarCambioMasivo({
+            tipo,
+            descripcion,
+            motivo,
+            varianteOrigenId,
+            varianteDestinoId: varianteDestinoId || undefined,
+            nuevaDosis: nuevaDosis ? Number(nuevaDosis) : undefined,
+            nuevoPrecio: nuevoPrecio ? Number(nuevoPrecio) : undefined,
+            planProductoIds: afectadasEnScope.map((af) => af.id),
+            preciosOriginales,
+          });
+        })();
 
     setResultado({ ok: result.ok, afectados: result.afectados, error: result.error });
     setAplicando(false);
@@ -414,7 +490,9 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Producto {tipo === 'cambio_variante' ? '' : 'actual'} *
+                  {tipo === 'agregar_producto' ? 'Producto a agregar'
+                    : tipo === 'eliminar_producto' ? 'Producto a eliminar'
+                    : tipo === 'cambio_variante' ? 'Producto' : 'Producto actual'} *
                 </label>
                 <select
                   value={productoOrigenId}
@@ -433,7 +511,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
 
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Variante actual *
+                  {esAgregar || esEliminar ? 'Presentación' : 'Variante actual'} *
                 </label>
                 <select
                   value={varianteOrigenId}
@@ -548,11 +626,11 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
               </div>
             )}
 
-            {tipo === 'cambio_dosis' && (
+            {(tipo === 'cambio_dosis' || tipo === 'agregar_producto') && (
               <div className="flex items-end gap-4">
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Nueva dosis por ha *
+                    {tipo === 'agregar_producto' ? 'Dosis por ha *' : 'Nueva dosis por ha *'}
                   </label>
                   <input
                     type="number"
@@ -583,7 +661,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
 
             <div className="flex justify-end pt-2">
               <Button onClick={irAPaso2} disabled={!paso1Valido}>
-                Ver productores afectados
+                {esAgregar ? 'Elegir productores' : 'Ver productores afectados'}
                 <ChevronRight size={16} />
               </Button>
             </div>
@@ -599,7 +677,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
               <div className="py-12 text-center text-slate-400 text-sm">
                 Buscando planes afectados…
               </div>
-            ) : afectadas.length === 0 ? (
+            ) : (!esAgregar && afectadas.length === 0) ? (
               <div className="py-12 text-center">
                 <p className="text-slate-500 text-sm">
                   Ningún plan usa esta variante actualmente.
@@ -640,7 +718,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
                         </p>
                         <p className="text-xs text-slate-400">
                           {opt === 'todos'
-                            ? `${productoresConAfectadas.length} productores · ${afectadas.length} ítems`
+                            ? `${productoresParaScope.length} productores${esAgregar ? '' : ` · ${afectadas.length} ítems`}`
                             : `${productoresSeleccionados.size} seleccionados`}
                         </p>
                       </div>
@@ -658,20 +736,20 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
                       <button
                         className="text-xs text-green-700 hover:underline"
                         onClick={() => {
-                          if (productoresSeleccionados.size === productoresConAfectadas.length) {
+                          if (productoresSeleccionados.size === productoresParaScope.length) {
                             setProductoresSeleccionados(new Set());
                           } else {
-                            setProductoresSeleccionados(new Set(productoresConAfectadas.map((p) => p.id)));
+                            setProductoresSeleccionados(new Set(productoresParaScope.map((p) => p.id)));
                           }
                         }}
                       >
-                        {productoresSeleccionados.size === productoresConAfectadas.length
+                        {productoresSeleccionados.size === productoresParaScope.length
                           ? 'Deseleccionar todos'
                           : 'Seleccionar todos'}
                       </button>
                     </div>
                     <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                      {productoresConAfectadas.map((p) => (
+                      {productoresParaScope.map((p) => (
                         <label
                           key={p.id}
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer"
@@ -683,7 +761,11 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
                             className="accent-green-700 w-4 h-4"
                           />
                           <span className="flex-1 text-sm text-slate-800">{p.nombre}</span>
-                          <span className="text-xs text-slate-400">{p.items} ítems</span>
+                          <span className="text-xs text-slate-400">
+                            {esAgregar
+                              ? `${(haPorProductor.get(p.id) ?? 0).toLocaleString('es-VE', { maximumFractionDigits: 0 })} Ha`
+                              : `${p.items} ítems`}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -718,7 +800,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
                 {TIPO_LABELS[tipo]}
               </div>
               <div className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700">
-                {afectadasEnScope.length} ítems · {impacto.length} productores
+                {totalItems} {totalItems === 1 ? 'ítem' : 'ítems'} · {impacto.length} productores
               </div>
               <div className={[
                 'rounded-lg px-3 py-1.5 text-xs font-semibold',
@@ -766,7 +848,7 @@ export default function CambioMasivoWizard({ productos, lotes }: Props) {
                 <tfoot>
                   <tr className="border-t-2 border-slate-200 bg-slate-50 font-semibold">
                     <td className="px-4 py-2.5 text-slate-700">Total</td>
-                    <td className="px-4 py-2.5 text-right text-slate-500">{afectadasEnScope.length}</td>
+                    <td className="px-4 py-2.5 text-right text-slate-500">{totalItems}</td>
                     <td className="px-4 py-2.5 text-right font-mono text-slate-700">${fmt(totalActual)}</td>
                     <td className="px-4 py-2.5 text-right font-mono text-slate-700">${fmt(totalNuevo)}</td>
                     <td className={[

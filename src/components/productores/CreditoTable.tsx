@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import SortableHeader from '@/components/ui/SortableHeader';
 import { useSortable, applySortable } from '@/hooks/useSortable';
-import { calcularRedondeoAgregado, calcularResumenCredito } from '@/lib/rounding';
+import { calcularRedondeoAgregado, calcularResumenCredito, esMecanizacion } from '@/lib/rounding';
 
 type EstadoCredito = 'ok' | 'advertencia' | 'excedido';
 type FiltroEstado = 'todos' | EstadoCredito;
@@ -38,7 +38,7 @@ interface Props {
     lotes_ids: string[] | null;
     precio_override: number | null;
     plan: { productor_id: string } | null;
-    variante: { id: string; presentacion: number; precio: number } | null;
+    variante: { id: string; presentacion: number; precio: number; producto: { categoria: string } | null } | null;
   }[];
 }
 
@@ -69,6 +69,7 @@ function calcularCostoProductor(
       }),
       presentacion: v.presentacion,
       precio: v.precio,
+      redondear: !esMecanizacion(v.producto?.categoria),
     });
     return total + costoTotal;
   }, 0);

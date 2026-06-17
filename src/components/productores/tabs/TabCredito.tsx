@@ -1,6 +1,6 @@
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
-import { calcularRedondeoAgregado, calcularResumenCredito } from '@/lib/rounding';
+import { calcularRedondeoAgregado, calcularResumenCredito, esMecanizacion } from '@/lib/rounding';
 
 interface Lote {
   id: string;
@@ -52,6 +52,7 @@ export default function TabCredito({ creditoAprobado, banco, creditos, plan, lot
       }),
       presentacion: v.presentacion,
       precio: v.precio,
+      redondear: !esMecanizacion(cat),
     });
     if (!categorias[cat]) categorias[cat] = { items: [], total: 0 };
     categorias[cat].items.push({ nombre: v.producto?.nombre ?? 'Producto', costo: costoTotal });

@@ -1,5 +1,5 @@
 import type { Productor, Lote, Plan, PlanProducto } from '@/types';
-import { calcularRedondeoAgregado } from './rounding';
+import { calcularRedondeoAgregado, esMecanizacion } from './rounding';
 
 export async function exportarPlanExcel(params: {
   productores: Productor[];
@@ -42,6 +42,7 @@ export async function exportarPlanExcel(params: {
         aplicaciones: aplicacionesAgg,
         presentacion: pp0.variante.presentacion,
         precio: pp0.variante.precio,
+        redondear: !esMecanizacion(pp0.variante.producto.categoria),
       });
 
       const haTotal = aplicacionesAgg.reduce((s, a) => s + a.hectareas, 0);

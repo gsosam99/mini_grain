@@ -1,14 +1,32 @@
 import type { ResultadoRedondeo, ResumenCredito } from '@/types';
 
+/**
+ * Categorías de mecanización (nivel 1 = "Mecanización"). Su costo NO se redondea
+ * a empaque entero — solo los insumos se redondean. El precio por pase ya viene
+ * ajustado vía precio_override (factor 40% cuando la maquinaria es del agricultor).
+ */
+export const MECANIZACION_CATEGORIAS = new Set<string>([
+  'Avioneta', 'Coqueo', 'Cosechadora', 'Flete de cosecha', 'Pase de asperjadora',
+  'Pase de encaladora', 'Pase de rastra', 'Pase de rotativa', 'Pase de Subsolador',
+  'Pase de trompo (Reabono)', 'Personal: labores, comidas, seguridad', 'Sembradora',
+]);
+
+export function esMecanizacion(categoria: string | null | undefined): boolean {
+  return categoria != null && MECANIZACION_CATEGORIAS.has(categoria);
+}
+
 export function calcularRedondeo(params: {
   dosisHa: number;
   hectareas: number;
   presentacion: number;
   precio: number;
+  /** false = no redondear a empaque entero (mecanización). Default true. */
+  redondear?: boolean;
 }): ResultadoRedondeo {
+  const redondear = params.redondear ?? true;
   const totalSinRedondear = params.dosisHa * params.hectareas;
-  const unidadesNecesarias =
-    params.presentacion > 0 ? Math.ceil(totalSinRedondear / params.presentacion) : 0;
+  const cruda = params.presentacion > 0 ? totalSinRedondear / params.presentacion : 0;
+  const unidadesNecesarias = redondear ? Math.ceil(cruda) : cruda;
   const costoTotal = unidadesNecesarias * params.precio;
   return { totalSinRedondear, unidadesNecesarias, costoTotal };
 }
@@ -25,7 +43,10 @@ export function calcularRedondeoAgregado(params: {
   aplicaciones: { dosisHa: number; hectareas: number; precioOverride?: number | null }[];
   presentacion: number;
   precio: number;
+  /** false = no redondear a empaque entero (mecanización). Default true. */
+  redondear?: boolean;
 }): ResultadoRedondeo {
+  const redondear = params.redondear ?? true;
   // Separar aplicaciones con precio_override de las que usan el precio base
   const grupos = new Map<number, number>(); // precio → totalSinRedondear acumulado
 
@@ -40,8 +61,8 @@ export function calcularRedondeoAgregado(params: {
   let unidadesNecesarias = 0;
 
   for (const [precioGrupo, totalGrupo] of grupos) {
-    const unidades =
-      params.presentacion > 0 ? Math.ceil(totalGrupo / params.presentacion) : 0;
+    const cruda = params.presentacion > 0 ? totalGrupo / params.presentacion : 0;
+    const unidades = redondear ? Math.ceil(cruda) : cruda;
     totalSinRedondear += totalGrupo;
     unidadesNecesarias += unidades;
     costoTotal += unidades * precioGrupo;

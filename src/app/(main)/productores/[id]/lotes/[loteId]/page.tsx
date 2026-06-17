@@ -3,7 +3,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import PageHeader from '@/components/layout/PageHeader';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import { ArrowLeft, Pencil } from 'lucide-react';
 
 interface Props {
   params: Promise<{ id: string; loteId: string }>;
@@ -52,6 +53,14 @@ export default async function LoteDetailPage({ params }: Props) {
       <PageHeader
         title={lote.nombre}
         description={`${lote.hectareas} Ha${lote.estado ? ' · ' + lote.estado : ''}`}
+        actions={
+          <Link href={`/productores/${id}/lotes/${loteId}/editar`}>
+            <Button variant="secondary" size="sm">
+              <Pencil size={14} />
+              Editar
+            </Button>
+          </Link>
+        }
       />
 
       <div className="space-y-6">

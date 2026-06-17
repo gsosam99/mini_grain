@@ -4,7 +4,7 @@ import { Fragment, useState, useMemo, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { Plus, Pencil, History, ChevronDown, ChevronRight } from 'lucide-react';
-import { calcularRedondeoAgregado } from '@/lib/rounding';
+import { calcularRedondeoAgregado, esMecanizacion } from '@/lib/rounding';
 import EditarPlanProductoModal from '@/components/planes/EditarPlanProductoModal';
 import AgregarProductoPlanModal from '@/components/planes/AgregarProductoPlanModal';
 import CrearPlanModal from '@/components/planes/CrearPlanModal';
@@ -192,6 +192,7 @@ function buildAggRows(items: PlanProducto[], lotes: Lote[]): AggRow[] {
         aplicaciones: ppRaws.map((d) => ({ dosisHa: d.pp.dosis_ha, hectareas: d.ha, precioOverride: d.pp.precio_override })),
         presentacion: v.presentacion,
         precio: v.precio,
+        redondear: !esMecanizacion(categoria),
       });
       const cantidadFisicaVariante = unidadesNecesarias * v.presentacion;
 
