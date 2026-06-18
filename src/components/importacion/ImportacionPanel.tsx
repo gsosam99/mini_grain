@@ -559,7 +559,7 @@ export default function ImportacionPanel() {
         supabase.from('lotes').select('id, productor_id, nombre, hectareas'),
         supabase.from('planes').select(`
           id, productor_id, ciclo,
-          plan_productos(id, dosis_ha, lotes_ids, precio_override,
+          plan_productos(id, dosis_ha, lotes_ids, precio_override, hectareas,
             variante:variantes_producto(id, unidad, presentacion, precio,
               producto:productos(id, nombre, categoria, subcategoria,
                 proveedor:proveedores(id, nombre)

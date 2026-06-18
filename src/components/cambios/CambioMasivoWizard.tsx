@@ -8,7 +8,7 @@ import {
   ArrowLeftRight, Users, RefreshCw,
 } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { calcularRedondeo, esMecanizacion } from '@/lib/rounding';
+import { calcularRedondeo, esServicio } from '@/lib/rounding';
 import { aplicarCambioMasivo, type TipoCambio } from '@/lib/actions/cambiosMasivos';
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -175,7 +175,7 @@ export default function CambioMasivoWizard({ productos, productores, lotes }: Pr
 
   const esAgregar = tipo === 'agregar_producto';
   const esEliminar = tipo === 'eliminar_producto';
-  const redondearSel = !esMecanizacion(productoOrigen?.categoria);
+  const redondearSel = !esServicio(varianteOrigen?.unidad);
 
   // Hectáreas totales por productor (para el preview de "agregar")
   const haPorProductor = useMemo(() => {

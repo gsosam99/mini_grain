@@ -4,7 +4,7 @@ import { Fragment, useState, useMemo, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { Plus, Pencil, History, ChevronDown, ChevronRight } from 'lucide-react';
-import { calcularRedondeoAgregado, esMecanizacion } from '@/lib/rounding';
+import { calcularRedondeoAgregado, esServicio } from '@/lib/rounding';
 import EditarPlanProductoModal from '@/components/planes/EditarPlanProductoModal';
 import AgregarProductoPlanModal from '@/components/planes/AgregarProductoPlanModal';
 import CrearPlanModal from '@/components/planes/CrearPlanModal';
@@ -29,6 +29,7 @@ interface PlanProducto {
   lotes_ids: string[] | null;
   created_at: string;
   precio_override?: number | null;
+  hectareas?: number | null;
   variante: VarianteConProducto | null;
   plan_cambios: {
     id: string; tipo: string; dosis_original: number | null; dosis_nueva: number | null;
@@ -84,6 +85,8 @@ const ORDEN_NIVEL1 = ['Insumos', 'Mecanización', 'Costo Financiero', 'Otros'];
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function getHectareasAplicables(pp: PlanProducto, lotes: Lote[]): number {
+  // Override por línea (ej. semillas en lotes unificados con varias variedades)
+  if (pp.hectareas != null) return pp.hectareas;
   const aplicables = pp.lotes_ids
     ? lotes.filter((l) => pp.lotes_ids!.includes(l.id))
     : lotes;
@@ -192,7 +195,7 @@ function buildAggRows(items: PlanProducto[], lotes: Lote[]): AggRow[] {
         aplicaciones: ppRaws.map((d) => ({ dosisHa: d.pp.dosis_ha, hectareas: d.ha, precioOverride: d.pp.precio_override })),
         presentacion: v.presentacion,
         precio: v.precio,
-        redondear: !esMecanizacion(categoria),
+        redondear: !esServicio(v.unidad),
       });
       const cantidadFisicaVariante = unidadesNecesarias * v.presentacion;
 

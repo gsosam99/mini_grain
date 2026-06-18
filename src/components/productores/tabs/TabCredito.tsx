@@ -1,6 +1,6 @@
 import Card, { CardBody, CardHeader } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
-import { calcularRedondeoAgregado, calcularResumenCredito, esMecanizacion } from '@/lib/rounding';
+import { calcularRedondeoAgregado, calcularResumenCredito, esServicio } from '@/lib/rounding';
 
 interface Lote {
   id: string;
@@ -13,6 +13,7 @@ interface PlanProducto {
   dosis_ha: number;
   lotes_ids: string[] | null;
   precio_override: number | null;
+  hectareas?: number | null;
   variante?: { id: string; unidad: string; presentacion: number; precio: number;
     producto?: { id: string; nombre: string; categoria: string } | null;
   } | null;
@@ -48,11 +49,12 @@ export default function TabCredito({ creditoAprobado, banco, creditos, plan, lot
         const aplicables = pp.lotes_ids
           ? lotes.filter((l) => pp.lotes_ids!.includes(l.id))
           : lotes;
-        return { dosisHa: pp.dosis_ha, hectareas: aplicables.reduce((s, l) => s + l.hectareas, 0), precioOverride: pp.precio_override };
+        const ha = pp.hectareas ?? aplicables.reduce((s, l) => s + l.hectareas, 0);
+        return { dosisHa: pp.dosis_ha, hectareas: ha, precioOverride: pp.precio_override };
       }),
       presentacion: v.presentacion,
       precio: v.precio,
-      redondear: !esMecanizacion(cat),
+      redondear: !esServicio(v.unidad),
     });
     if (!categorias[cat]) categorias[cat] = { items: [], total: 0 };
     categorias[cat].items.push({ nombre: v.producto?.nombre ?? 'Producto', costo: costoTotal });

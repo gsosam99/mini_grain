@@ -101,6 +101,8 @@ export interface PlanProducto {
   dosis_ha: number;
   lotes_ids: string[] | null;
   precio_override: number | null;
+  /** Override de hectáreas para la línea (ej. semillas por porción del lote unificado). */
+  hectareas?: number | null;
   created_at: string;
   variante?: VarianteProducto & { producto?: Producto };
   plan_cambios?: PlanCambio[];

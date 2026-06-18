@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import SortableHeader from '@/components/ui/SortableHeader';
 import { useSortable, applySortable } from '@/hooks/useSortable';
-import { calcularRedondeoAgregado, calcularResumenCredito, esMecanizacion } from '@/lib/rounding';
+import { calcularRedondeoAgregado, calcularResumenCredito, esServicio } from '@/lib/rounding';
 
 type EstadoCredito = 'ok' | 'advertencia' | 'excedido';
 type FiltroEstado = 'todos' | EstadoCredito;
@@ -37,8 +37,9 @@ interface Props {
     dosis_ha: number;
     lotes_ids: string[] | null;
     precio_override: number | null;
+    hectareas: number | null;
     plan: { productor_id: string } | null;
-    variante: { id: string; presentacion: number; precio: number; producto: { categoria: string } | null } | null;
+    variante: { id: string; presentacion: number; precio: number; unidad: string; producto: { categoria: string } | null } | null;
   }[];
 }
 
@@ -65,11 +66,12 @@ function calcularCostoProductor(
         const lotesAplicables = pp.lotes_ids
           ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
           : productorLotes;
-        return { dosisHa: pp.dosis_ha, hectareas: lotesAplicables.reduce((s, l) => s + l.hectareas, 0), precioOverride: pp.precio_override };
+        const ha = pp.hectareas ?? lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
+        return { dosisHa: pp.dosis_ha, hectareas: ha, precioOverride: pp.precio_override };
       }),
       presentacion: v.presentacion,
       precio: v.precio,
-      redondear: !esMecanizacion(v.producto?.categoria),
+      redondear: !esServicio(v.unidad),
     });
     return total + costoTotal;
   }, 0);

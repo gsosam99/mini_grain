@@ -1,18 +1,13 @@
 import type { ResultadoRedondeo, ResumenCredito } from '@/types';
 
 /**
- * Categorías de mecanización (nivel 1 = "Mecanización"). Su costo NO se redondea
- * a empaque entero — solo los insumos se redondean. El precio por pase ya viene
- * ajustado vía precio_override (factor 40% cuando la maquinaria es del agricultor).
+ * Solo los insumos FÍSICOS (que se compran por empaque) se redondean a empaque
+ * entero. Los servicios — Mecanización, Tecnología & Asistencia Técnica, Fletes,
+ * Financiamiento — NO se redondean; su costo es la cantidad fraccionada × precio.
+ * El marcador técnico de un servicio es `unidad === 'servicio'`.
  */
-export const MECANIZACION_CATEGORIAS = new Set<string>([
-  'Avioneta', 'Coqueo', 'Cosechadora', 'Flete de cosecha', 'Pase de asperjadora',
-  'Pase de encaladora', 'Pase de rastra', 'Pase de rotativa', 'Pase de Subsolador',
-  'Pase de trompo (Reabono)', 'Personal: labores, comidas, seguridad', 'Sembradora',
-]);
-
-export function esMecanizacion(categoria: string | null | undefined): boolean {
-  return categoria != null && MECANIZACION_CATEGORIAS.has(categoria);
+export function esServicio(unidad: string | null | undefined): boolean {
+  return unidad === 'servicio';
 }
 
 export function calcularRedondeo(params: {

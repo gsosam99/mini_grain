@@ -133,6 +133,7 @@ create table if not exists plan_productos (
   variante_id uuid not null references variantes_producto(id),
   dosis_ha numeric not null,
   lotes_ids uuid[],
+  hectareas numeric,   -- override de ha para la línea (semillas por porción del lote unificado); null = usa el total del/los lote(s)
   created_at timestamptz default now()
 );
 

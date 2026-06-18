@@ -34,6 +34,7 @@ interface Props {
   plan: (Plan & {
     plan_productos: {
       id: string; dosis_ha: number; lotes_ids: string[] | null; created_at: string;
+      precio_override?: number | null; hectareas?: number | null;
       variante: {
         id: string; unidad: string; presentacion: number; precio: number;
         producto: { id: string; nombre: string; categoria: string; subcategoria: string | null;

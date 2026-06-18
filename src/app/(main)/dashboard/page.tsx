@@ -17,7 +17,7 @@ export default async function DashboardPage() {
     supabase.from('planes').select(`
       productor_id,
       plan_productos(
-        id, dosis_ha, lotes_ids, precio_override,
+        id, dosis_ha, lotes_ids, precio_override, hectareas,
         variante:variantes_producto(id, presentacion, precio, unidad,
           producto:productos(categoria)
         )
@@ -26,9 +26,9 @@ export default async function DashboardPage() {
   ]);
 
   type PlanProductoRow = {
-    id: string; dosis_ha: number; lotes_ids: string[] | null; precio_override: number | null;
+    id: string; dosis_ha: number; lotes_ids: string[] | null; precio_override: number | null; hectareas: number | null;
     plan: { productor_id: string } | null;
-    variante: { id: string; presentacion: number; precio: number; producto: { categoria: string } | null } | null;
+    variante: { id: string; presentacion: number; precio: number; unidad: string; producto: { categoria: string } | null } | null;
   };
 
   const productores = (productoresRes.data ?? []) as {
@@ -39,8 +39,8 @@ export default async function DashboardPage() {
   // Flatten planes → plan_productos and attach productor_id to each item
   const planesData = (planesRes.data ?? []) as unknown as {
     productor_id: string;
-    plan_productos: { id: string; dosis_ha: number; lotes_ids: string[] | null; precio_override: number | null;
-      variante: { id: string; presentacion: number; precio: number; producto: { categoria: string } | null } | null }[];
+    plan_productos: { id: string; dosis_ha: number; lotes_ids: string[] | null; precio_override: number | null; hectareas: number | null;
+      variante: { id: string; presentacion: number; precio: number; unidad: string; producto: { categoria: string } | null } | null }[];
   }[];
   const planProductos: PlanProductoRow[] = planesData.flatMap((plan) =>
     plan.plan_productos.map((pp) => ({ ...pp, plan: { productor_id: plan.productor_id } }))

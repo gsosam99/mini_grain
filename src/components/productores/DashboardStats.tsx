@@ -1,6 +1,6 @@
 import Card from '@/components/ui/Card';
 import { Users, MapPin, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { calcularRedondeoAgregado } from '@/lib/rounding';
+import { calcularRedondeoAgregado, esServicio } from '@/lib/rounding';
 
 interface DashboardStatsProps {
   productores: { id: string; credito_aprobado: number }[];
@@ -10,8 +10,9 @@ interface DashboardStatsProps {
     dosis_ha: number;
     lotes_ids: string[] | null;
     precio_override: number | null;
+    hectareas: number | null;
     plan: { productor_id: string } | null;
-    variante: { id: string; presentacion: number; precio: number } | null;
+    variante: { id: string; presentacion: number; precio: number; unidad: string } | null;
   }[];
 }
 
@@ -37,13 +38,14 @@ function calcularCostoPorProductor(
       const lotesAplicables = pp.lotes_ids
         ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
         : productorLotes;
-      const hectareas = lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
+      const hectareas = pp.hectareas ?? lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
       return { dosisHa: pp.dosis_ha, hectareas, precioOverride: pp.precio_override };
     });
     const { costoTotal } = calcularRedondeoAgregado({
       aplicaciones,
       presentacion: v.presentacion,
       precio: v.precio,
+      redondear: !esServicio(v.unidad),
     });
     return total + costoTotal;
   }, 0);

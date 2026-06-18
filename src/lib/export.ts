@@ -1,5 +1,5 @@
 import type { Productor, Lote, Plan, PlanProducto } from '@/types';
-import { calcularRedondeoAgregado, esMecanizacion } from './rounding';
+import { calcularRedondeoAgregado, esServicio } from './rounding';
 
 export async function exportarPlanExcel(params: {
   productores: Productor[];
@@ -34,7 +34,7 @@ export async function exportarPlanExcel(params: {
         const aplicables = pp.lotes_ids
           ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
           : productorLotes;
-        const hectareas = aplicables.reduce((s, l) => s + l.hectareas, 0);
+        const hectareas = pp.hectareas ?? aplicables.reduce((s, l) => s + l.hectareas, 0);
         return { dosisHa: pp.dosis_ha, hectareas, precioOverride: pp.precio_override };
       });
 
@@ -42,7 +42,7 @@ export async function exportarPlanExcel(params: {
         aplicaciones: aplicacionesAgg,
         presentacion: pp0.variante.presentacion,
         precio: pp0.variante.precio,
-        redondear: !esMecanizacion(pp0.variante.producto.categoria),
+        redondear: !esServicio(pp0.variante.unidad),
       });
 
       const haTotal = aplicacionesAgg.reduce((s, a) => s + a.hectareas, 0);

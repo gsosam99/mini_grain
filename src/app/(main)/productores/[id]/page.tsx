@@ -40,7 +40,7 @@ export default async function ProductorDetailPage({ params }: Props) {
       .select(`
         id, ciclo,
         plan_productos(
-          id, dosis_ha, lotes_ids, precio_override, created_at,
+          id, dosis_ha, lotes_ids, precio_override, hectareas, created_at,
           variante:variantes_producto(
             id, unidad, presentacion, precio,
             producto:productos(id, nombre, categoria, subcategoria,
