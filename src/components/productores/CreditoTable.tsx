@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
+import SearchInput from '@/components/ui/SearchInput';
 import SortableHeader from '@/components/ui/SortableHeader';
 import { useSortable, applySortable } from '@/hooks/useSortable';
-import { calcularRedondeoAgregado, calcularResumenCredito, esServicio } from '@/lib/rounding';
+import { calcularCostoPorProductor, calcularResumenCredito } from '@/lib/rounding';
 
 type EstadoCredito = 'ok' | 'advertencia' | 'excedido';
 type FiltroEstado = 'todos' | EstadoCredito;
@@ -43,40 +43,6 @@ interface Props {
   }[];
 }
 
-function calcularCostoProductor(
-  productorId: string,
-  lotes: Props['lotes'],
-  planProductos: Props['planProductos']
-): number {
-  const productorLotes = lotes.filter((l) => l.productor_id === productorId);
-
-  // Agrupar por variante para aplicar UN SOLO ceil por variante
-  const varMap = new Map<string, Props['planProductos']>();
-  for (const pp of planProductos) {
-    if (!pp.variante || pp.plan?.productor_id !== productorId) continue;
-    const vid = pp.variante.id;
-    if (!varMap.has(vid)) varMap.set(vid, []);
-    varMap.get(vid)!.push(pp);
-  }
-
-  return [...varMap.values()].reduce((total, varPps) => {
-    const v = varPps[0].variante!;
-    const { costoTotal } = calcularRedondeoAgregado({
-      aplicaciones: varPps.map((pp) => {
-        const lotesAplicables = pp.lotes_ids
-          ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
-          : productorLotes;
-        const ha = pp.hectareas ?? lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
-        return { dosisHa: pp.dosis_ha, hectareas: ha, precioOverride: pp.precio_override };
-      }),
-      presentacion: v.presentacion,
-      precio: v.precio,
-      redondear: !esServicio(v.unidad),
-    });
-    return total + costoTotal;
-  }, 0);
-}
-
 type SortKey = 'nombre' | 'estado' | 'banco' | 'credito' | 'costo' | 'delta';
 
 export default function CreditoTable({ productores, lotes, planProductos }: Props) {
@@ -86,7 +52,7 @@ export default function CreditoTable({ productores, lotes, planProductos }: Prop
 
   const todos = useMemo(() => {
     return productores.map((p) => {
-      const costo = calcularCostoProductor(p.id, lotes, planProductos);
+      const costo = calcularCostoPorProductor(p.id, lotes, planProductos);
       const resumen = calcularResumenCredito({ creditoAprobado: p.credito_aprobado, costoTotalPlan: costo });
       return { ...p, costo, resumen };
     });
@@ -119,14 +85,11 @@ export default function CreditoTable({ productores, lotes, planProductos }: Prop
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
+        <div className="w-full sm:max-w-xs">
+          <SearchInput
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar productor..."
-            className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
           />
         </div>
         <div className="flex flex-wrap gap-2">

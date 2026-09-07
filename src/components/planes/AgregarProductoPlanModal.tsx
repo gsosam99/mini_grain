@@ -7,7 +7,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { calcularRedondeo } from '@/lib/rounding';
-import { Search } from 'lucide-react';
+import SearchInput from '@/components/ui/SearchInput';
 
 interface Lote {
   id: string;
@@ -65,7 +65,8 @@ export default function AgregarProductoPlanModal({
         variantes:variantes_producto(id, unidad, presentacion, precio)
       `)
       .order('nombre')
-      .then(({ data }) => {
+      .then(({ data, error: fetchError }) => {
+        if (fetchError) setError(fetchError.message);
         setProductos((data ?? []) as unknown as ProductoBuscado[]);
         setBuscando(false);
       });
@@ -160,17 +161,13 @@ export default function AgregarProductoPlanModal({
       <div className="space-y-4">
         {!productoSeleccionado ? (
           <div>
-            <div className="relative mb-3">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar producto o proveedor..."
-                className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 pl-9 pr-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-300"
-                autoFocus
-              />
-            </div>
+            <SearchInput
+              wrapperClassName="mb-3"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar producto o proveedor..."
+              autoFocus
+            />
             <div className="max-h-72 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
               {buscando && (
                 <p className="px-4 py-3 text-sm text-slate-400">Cargando productos...</p>

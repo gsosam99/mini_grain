@@ -76,7 +76,8 @@ export default function EditarPlanProductoModal({
       .from('variantes_producto')
       .select('id, unidad, presentacion, precio, producto_id')
       .eq('producto_id', productoId)
-      .then(({ data }) => {
+      .then(({ data, error: fetchError }) => {
+        if (fetchError) setError(fetchError.message);
         setVariantes((data ?? []) as VarianteConProducto[]);
         setLoadingVariantes(false);
       });

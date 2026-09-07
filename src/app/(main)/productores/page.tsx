@@ -4,6 +4,7 @@ import ProductoresTable from '@/components/productores/ProductoresTable';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
+import type { Productor, Tecnico } from '@/types';
 
 export default async function ProductoresPage() {
   const supabase = await createSupabaseServerClient();
@@ -21,12 +22,13 @@ export default async function ProductoresPage() {
     supabase.from('lotes').select('id, productor_id, hectareas'),
   ]);
 
-  type ProductorRow = {
-    id: string; nombre: string; banco: string | null; credito_aprobado: number;
-    estado: string | null; localidad: string | null;
-    tecnico: { id: string; nombre: string; contacto: string | null } | null;
-    coordinador: { id: string; nombre: string; contacto: string | null } | null;
-    gerente: { id: string; nombre: string; contacto: string | null } | null;
+  type ProductorRow = Pick<
+    Productor,
+    'id' | 'nombre' | 'banco' | 'credito_aprobado' | 'estado' | 'localidad'
+  > & {
+    tecnico: Pick<Tecnico, 'id' | 'nombre' | 'contacto'> | null;
+    coordinador: Pick<Tecnico, 'id' | 'nombre' | 'contacto'> | null;
+    gerente: Pick<Tecnico, 'id' | 'nombre' | 'contacto'> | null;
   };
   const productores = (productoresRes.data ?? []) as unknown as ProductorRow[];
   const lotes = (lotesRes.data ?? []) as { id: string; productor_id: string; hectareas: number }[];

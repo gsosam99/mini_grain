@@ -1,67 +1,25 @@
 import Card from '@/components/ui/Card';
 import { Users, MapPin, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { calcularRedondeoAgregado, esServicio } from '@/lib/rounding';
+import { calcularCostoPorProductor, type PlanProductoParaCosto } from '@/lib/rounding';
 
 interface DashboardStatsProps {
   productores: { id: string; credito_aprobado: number }[];
   lotes: { id: string; productor_id: string; hectareas: number }[];
-  planProductos: {
-    id: string;
-    dosis_ha: number;
-    lotes_ids: string[] | null;
-    precio_override: number | null;
-    hectareas: number | null;
-    plan: { productor_id: string } | null;
-    variante: { id: string; presentacion: number; precio: number; unidad: string } | null;
-  }[];
-}
-
-function calcularCostoPorProductor(
-  productorId: string,
-  lotes: DashboardStatsProps['lotes'],
-  planProductos: DashboardStatsProps['planProductos']
-): number {
-  const productorLotes = lotes.filter((l) => l.productor_id === productorId);
-
-  // Agrupar por variante para aplicar UN SOLO ceil por variante (igual que el Excel maestro)
-  const varMap = new Map<string, DashboardStatsProps['planProductos']>();
-  for (const pp of planProductos) {
-    if (!pp.variante || pp.plan?.productor_id !== productorId) continue;
-    const vid = pp.variante.id;
-    if (!varMap.has(vid)) varMap.set(vid, []);
-    varMap.get(vid)!.push(pp);
-  }
-
-  return [...varMap.values()].reduce((total, varPps) => {
-    const v = varPps[0].variante!;
-    const aplicaciones = varPps.map((pp) => {
-      const lotesAplicables = pp.lotes_ids
-        ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
-        : productorLotes;
-      const hectareas = pp.hectareas ?? lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
-      return { dosisHa: pp.dosis_ha, hectareas, precioOverride: pp.precio_override };
-    });
-    const { costoTotal } = calcularRedondeoAgregado({
-      aplicaciones,
-      presentacion: v.presentacion,
-      precio: v.precio,
-      redondear: !esServicio(v.unidad),
-    });
-    return total + costoTotal;
-  }, 0);
+  planProductos: PlanProductoParaCosto[];
 }
 
 export default function DashboardStats({ productores, lotes, planProductos }: DashboardStatsProps) {
   const totalHa = lotes.reduce((sum, l) => sum + l.hectareas, 0);
   const totalCredito = productores.reduce((sum, p) => sum + p.credito_aprobado, 0);
 
-  const totalCostoPlan = productores.reduce(
-    (sum, p) => sum + calcularCostoPorProductor(p.id, lotes, planProductos),
-    0
+  const costosPorProductor = productores.map(
+    (p) => calcularCostoPorProductor(p.id, lotes, planProductos)
   );
 
+  const totalCostoPlan = costosPorProductor.reduce((sum, costo) => sum + costo, 0);
+
   const excedidos = productores.filter(
-    (p) => calcularCostoPorProductor(p.id, lotes, planProductos) > p.credito_aprobado
+    (p, i) => costosPorProductor[i] > p.credito_aprobado
   ).length;
 
   // Balance global

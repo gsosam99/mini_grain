@@ -5,9 +5,10 @@ import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
+import SearchInput from '@/components/ui/SearchInput';
 import SortableHeader from '@/components/ui/SortableHeader';
 import { useSortable, applySortable } from '@/hooks/useSortable';
-import { Search, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 interface Productor {
   id: string;
@@ -70,16 +71,11 @@ export default function ProductoresTable({ productores, lotes }: Props) {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, localidad o técnico..."
-              className="w-full rounded-lg border border-slate-300 bg-white text-slate-900 pl-9 pr-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-300"
-            />
-          </div>
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, localidad o técnico..."
+          />
         </div>
         <select
           value={filterEstado}

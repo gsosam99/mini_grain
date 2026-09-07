@@ -66,6 +66,54 @@ export function calcularRedondeoAgregado(params: {
   return { totalSinRedondear, unidadesNecesarias, costoTotal };
 }
 
+export interface PlanProductoParaCosto {
+  id: string;
+  dosis_ha: number;
+  lotes_ids: string[] | null;
+  precio_override: number | null;
+  hectareas: number | null;
+  plan: { productor_id: string } | null;
+  variante: { id: string; presentacion: number; precio: number; unidad: string } | null;
+}
+
+/**
+ * Costo total del plan de un productor: agrupa sus plan_productos por variante
+ * y aplica UN SOLO ceil por variante (igual que el Excel maestro).
+ */
+export function calcularCostoPorProductor(
+  productorId: string,
+  lotes: { id: string; productor_id: string; hectareas: number }[],
+  planProductos: PlanProductoParaCosto[]
+): number {
+  const productorLotes = lotes.filter((l) => l.productor_id === productorId);
+
+  const varMap = new Map<string, PlanProductoParaCosto[]>();
+  for (const pp of planProductos) {
+    if (!pp.variante || pp.plan?.productor_id !== productorId) continue;
+    const vid = pp.variante.id;
+    if (!varMap.has(vid)) varMap.set(vid, []);
+    varMap.get(vid)!.push(pp);
+  }
+
+  return [...varMap.values()].reduce((total, varPps) => {
+    const v = varPps[0].variante!;
+    const aplicaciones = varPps.map((pp) => {
+      const lotesAplicables = pp.lotes_ids
+        ? productorLotes.filter((l) => pp.lotes_ids!.includes(l.id))
+        : productorLotes;
+      const hectareas = pp.hectareas ?? lotesAplicables.reduce((s, l) => s + l.hectareas, 0);
+      return { dosisHa: pp.dosis_ha, hectareas, precioOverride: pp.precio_override };
+    });
+    const { costoTotal } = calcularRedondeoAgregado({
+      aplicaciones,
+      presentacion: v.presentacion,
+      precio: v.precio,
+      redondear: !esServicio(v.unidad),
+    });
+    return total + costoTotal;
+  }, 0);
+}
+
 export function calcularResumenCredito(params: {
   creditoAprobado: number;
   costoTotalPlan: number;
